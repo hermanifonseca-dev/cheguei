@@ -651,16 +651,16 @@
       const cidade = cleanZPLText(inscricao.cidade).toUpperCase();
 
       const encoder = new TextEncoder();
-      // Comando ZPL centralizado, limpo e sem caracteres corrompidos
+      // Comando ZPL com fontes 30% maiores e alinhamento centralizado (^FB600,1,0,C,0)
       const zplCommand = `^XA
 ^PW600
-^LL220
-^CF0,48
-^FO0,30^FB600,1,0,C,0^FD${nomeFormatado}^FS
-^CF0,26
-^FO0,95^FB600,1,0,C,0^FD${cargoEmpresa}^FS
-^CF0,24
-^FO0,140^FB600,1,0,C,0^FD${cidade}^FS
+^LL240
+^CF0,64
+^FO0,20^FB600,1,0,C,0^FD${nomeFormatado}^FS
+^CF0,34
+^FO0,105^FB600,1,0,C,0^FD${cargoEmpresa}^FS
+^CF0,32
+^FO0,155^FB600,1,0,C,0^FD${cidade}^FS
 ^XZ`;
 
       const data = encoder.encode(zplCommand);
@@ -738,7 +738,7 @@
     // Inicia verificação automática a cada 3 segundos
     setInterval(checkPendingPrints, 3000);
 
-    // Impressão de teste manual usando o layout idêntico à Foto 1
+    // Impressão de teste manual usando o layout idêntico à Foto 1 com letras 30% maiores
     async function printTestLabel() {
       if (!usbDevice || outEndpoint === null) return;
       
@@ -748,13 +748,13 @@
         const encoder = new TextEncoder();
         const zplCommand = `^XA
 ^PW600
-^LL220
-^CF0,48
-^FO0,30^FB600,1,0,C,0^FDHERMANI FONSECA^FS
-^CF0,26
-^FO0,95^FB600,1,0,C,0^FDDESENVOLVEDOR DE SISTEMAS - POLIS GESTAO^FS
-^CF0,24
-^FO0,140^FB600,1,0,C,0^FDGOVERNADOR VALADARES^FS
+^LL240
+^CF0,64
+^FO0,20^FB600,1,0,C,0^FDHERMANI FONSECA^FS
+^CF0,34
+^FO0,105^FB600,1,0,C,0^FDDESENVOLVEDOR DE SISTEMAS - POLIS GESTAO^FS
+^CF0,32
+^FO0,155^FB600,1,0,C,0^FDGOVERNADOR VALADARES^FS
 ^XZ`;
 
         const data = encoder.encode(zplCommand);

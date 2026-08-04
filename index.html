@@ -68,13 +68,13 @@
       max-width: 1024px;
       display: flex;
       flex-direction: column;
-      padding: 1rem 2rem 2rem 2rem;
+      padding: 0 1rem 1rem 1rem;
       position: relative;
     }
 
     @media (min-width: 768px) {
       .app-container {
-        padding: 1.5rem 3rem 3rem 3rem;
+        padding: 0 2rem 2rem 2rem;
       }
     }
 
@@ -82,18 +82,20 @@
     .header {
       display: flex;
       justify-content: center;
-      align-items: center;
-      margin-bottom: 0.5rem;
+      align-items: flex-start;
+      margin-bottom: 0;
+      margin-top: 0;
+      padding-top: 0.5rem;
       z-index: 10;
       position: relative;
       width: 100%;
     }
 
     .logo-container img {
-      height: 960px;
+      height: 1440px;
       width: auto;
-      max-width: 85vw;
-      max-height: 40vh;
+      max-width: 90vw;
+      max-height: 45vh;
       object-fit: contain;
       filter: drop-shadow(0px 4px 12px rgba(0,0,0,0.5));
     }
@@ -141,6 +143,16 @@
 
     .printer-module.connected i {
       color: var(--color-primary);
+    }
+
+    .printer-module.connected {
+      background: rgba(0, 168, 89, 0.85);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 20px rgba(0, 168, 89, 0.4);
+    }
+
+    .printer-module.connected i {
+      color: #fff;
     }
 
     .status-dot {

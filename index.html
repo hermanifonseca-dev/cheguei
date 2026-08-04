@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cheguei - Check-in Inteligente</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Phosphor Icons (para iconografia moderna) -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    :root {
+      /* Paleta da Logo e Tema Escuro/Verde */
+      --color-primary: #00a859;
+      --color-primary-hover: #008f4c;
+      --color-primary-light: rgba(0, 168, 89, 0.15);
+      
+      --color-bg-base: #09090b;
+      --color-surface: #18181b;
+      --color-surface-elevated: #27272a;
+      
+      --color-text-primary: #fafafa;
+      --color-text-secondary: #a1a1aa;
+      --color-text-muted: #71717a;
+
+      --color-danger: #ef4444;
+      --color-warning: #f59e0b;
+
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-full: 9999px;
+
+      --shadow-glow: 0 0 40px rgba(0, 168, 89, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: var(--color-bg-base);
+      color: var(--color-text-primary);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(0, 168, 89, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(0, 168, 89, 0.05), transparent 25%);
+    }
+
+    /* Container Principal (Tablet) */
+    .app-container {
+      width: 100%;
+      height: 100%;
+      max-width: 1024px;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      position: relative;
+    }
+
+    @media (min-width: 768px) {
+      .app-container {
+        padding: 3rem;
+      }
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      z-index: 10;
+    }
+
+    .logo-container img {
+      height: 90px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0px 4px 12px rgba(0,0,0,0.5));
+    }
+
+    /* Status e Conector da Impressora */
+    .printer-module {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-surface-elevated);
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+    }
+
+    .printer-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--color-danger);
+      box-shadow: 0 0 8px var(--color-danger);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .status-dot.connected {
+      background-color: var(--color-primary);
+      box-shadow: 0 0 12px var(--color-primary);
+    }
+
+    .btn-connect {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      border: 1px solid rgba(0, 168, 89, 0.3);
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-connect:hover {
+      background: var(--color-primary);
+      color: var(--color-bg-base);
+      border-color: var(--color-primary);
+    }
+
+    .btn-connect:active {
+      transform: scale(0.96);
+    }
+
+    .btn-connect i {
+      font-size: 1.125rem;
+    }
+
+    /* Área Principal / Split Layout */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+      z-index: 10;
+    }
+
+    @media (min-width: 768px) {
+      .main-content {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .hero-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .hero-text h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-text h1 span {
+      color: var(--color-primary);
+    }
+
+    .hero-text p {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      max-width: 400px;
+    }
+
+    /* Caixa do Scanner */
+    .scanner-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .scanner-box {
+      width: clamp(280px, 45vh, 400px);
+      height: clamp(280px, 45vh, 400px);
+      background: rgba(24, 24, 27, 0.4);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-glow), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Moldura estilo mira do Scanner */
+    .scanner-frame {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      right: 24px;
+      bottom: 24px;
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-frame::before,
+    .scanner-frame::after,
+    .scanner-frame span::before,
+    .scanner-frame span::after {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: var(--color-primary);
+      border-style: solid;
+    }
+
+    .scanner-frame::before {
+      top: -2px; left: -2px;
+      border-width: 4px 0 0 4px;
+      border-top-left-radius: 12px;
+    }
+    .scanner-frame::after {
+      top: -2px; right: -2px;
+      border-width: 4px 4px 0 0;
+      border-top-right-radius: 12px;
+    }
+    .scanner-frame span::before {
+      bottom: -2px; left: -2px;
+      border-width: 0 0 4px 4px;
+      border-bottom-left-radius: 12px;
+    }
+    .scanner-frame span::after {
+      bottom: -2px; right: -2px;
+      border-width: 0 4px 4px 0;
+      border-bottom-right-radius: 12px;
+    }
+
+    /* Linha de Scanner Animada */
+    .scan-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: var(--color-primary);
+      box-shadow: 0 0 12px 2px var(--color-primary);
+      top: 0;
+      left: 0;
+      animation: scan 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+    }
+
+    @keyframes scan {
+      0% { transform: translateY(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(clamp(232px, calc(45vh - 48px), 352px)); opacity: 0; }
+    }
+
+    .scanner-icon {
+      font-size: 4rem;
+      color: rgba(255,255,255,0.1);
+      margin-bottom: 1rem;
+    }
+
+    .scanner-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.125rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      text-align: center;
+    }
+
+    /* Modal de Feedback/Status da Impressora */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--color-surface-elevated);
+      color: var(--color-text-primary);
+      padding: 12px 24px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.05);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 100;
+    }
+
+    .toast-container.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      font-size: 1.5rem;
+    }
+
+    .toast-icon.success { color: var(--color-primary); }
+    .toast-icon.error { color: var(--color-danger); }
+
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Cabeçalho -->
+    <header class="header">
+      <div class="logo-container">
+        <!-- Logo do Cheguei -->
+        <img src="logo_cheguei_corporate_transparent.png" alt="Cheguei Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNjAiPjx0ZXh0IHk9IjM1IiBmb250LWZhbWlseT0iU3BhY2UgR3JvdGVzaywgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMGE4NTkiPkNIRUdVRUk8L3RleHQ+PC9zdmc+'" />
+      </div>
+
+      <!-- Módulo da Impressora USB -->
+      <div class="printer-module">
+        <div class="printer-status">
+          <div class="status-dot" id="status-dot"></div>
+          <span id="status-text">Desconectada</span>
+        </div>
+        <button class="btn-connect" id="btn-connect-printer">
+          <i class="ph ph-usb"></i> Conectar
+        </button>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content">
+      
+      <div class="hero-text">
+        <h1>Check-in<br><span>Rápido e Fácil</span></h1>
+        <p>Aponte o QR Code do seu ingresso para a câmera do tablet para imprimir sua credencial automaticamente.</p>
+      </div>
+
+      <div class="scanner-container">
+        <div class="scanner-box">
+          <div class="scanner-frame">
+            <span></span>
+            <div class="scan-line"></div>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+              <i class="ph ph-qr-code scanner-icon"></i>
+              <p class="scanner-text">Posicione o<br>QR Code aqui</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Notificações Toast -->
+  <div class="toast-container" id="toast">
+    <i class="ph ph-check-circle toast-icon" id="toast-icon"></i>
+    <span id="toast-message">Mensagem</span>
+  </div>
+
+  <script>
+    // Referências DOM
+    const btnConnect = document.getElementById('btn-connect-printer');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const toast = document.getElementById('toast');
+    const toastIcon = document.getElementById('toast-icon');
+    const toastMessage = document.getElementById('toast-message');
+
+    let usbDevice = null;
+
+    // Função para mostrar notificação
+    function showToast(message, type = 'success') {
+      toastMessage.textContent = message;
+      
+      if (type === 'success') {
+        toastIcon.className = 'ph ph-check-circle toast-icon success';
+      } else {
+        toastIcon.className = 'ph ph-warning-circle toast-icon error';
+      }
+
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+
+    // Atualiza a UI baseada no status de conexão
+    function updatePrinterStatus(connected) {
+      if (connected) {
+        statusDot.classList.add('connected');
+        statusText.textContent = 'Impressora Pronta';
+        statusText.style.color = 'var(--color-primary)';
+        btnConnect.innerHTML = '<i class="ph ph-printer"></i> Imprimir Teste';
+      } else {
+        statusDot.classList.remove('connected');
+        statusText.textContent = 'Desconectada';
+        statusText.style.color = 'var(--color-text-secondary)';
+        btnConnect.innerHTML = '<i class="ph ph-usb"></i> Conectar';
+      }
+    }
+
+    // Função para lidar com a conexão via WebUSB
+    async function handlePrinterConnection() {
+      // Se já estiver conectado, vamos simular uma impressão de teste
+      if (usbDevice) {
+        printTestBadge();
+        return;
+      }
+
+      try {
+        // Solicitar acesso a um dispositivo USB.
+        // O filtro vazio permite listar todos, mas pode ser restringido por vendorId de impressoras térmicas (ex: Epson, Elgin, etc).
+        // Ex: filters: [{ vendorId: 0x04b8 }] (Epson)
+        const device = await navigator.usb.requestDevice({ filters: [] });
+        
+        await device.open();
+        
+        // Seleciona a primeira configuração (geralmente padrão para impressoras)
+        if (device.configuration === null) {
+          await device.selectConfiguration(1);
+        }
+        
+        // Reivindica a interface principal para se comunicar
+        // Geralmente a interface 0 para impressoras USB classe 7.
+        await device.claimInterface(0); 
+
+        usbDevice = device;
+        updatePrinterStatus(true);
+        showToast('Impressora conectada com sucesso!', 'success');
+
+      } catch (error) {
+        console.error('Erro na conexão USB:', error);
+        
+        // Tratamento especial se o navegador não suportar WebUSB ou o usuário cancelar
+        if (error.name === 'NotFoundError') {
+          showToast('Seleção de impressora cancelada.', 'error');
+        } else if (error.name === 'SecurityError') {
+          showToast('Permissão negada. É necessário HTTPS.', 'error');
+        } else {
+          showToast('Erro ao conectar: ' + error.message, 'error');
+        }
+      }
+    }
+
+    // Simulação de envio de comando ESC/POS para a impressora
+    async function printTestBadge() {
+      if (!usbDevice) return;
+      
+      showToast('Enviando impressão de teste...', 'success');
+
+      try {
+        // Encontrar o EndPoint de Saída (Out)
+        let endpointOut = null;
+        const iface = usbDevice.configuration.interfaces[0].alternate;
+        for (const ep of iface.endpoints) {
+          if (ep.direction === 'out') {
+            endpointOut = ep.endpointNumber;
+            break;
+          }
+        }
+
+        if (endpointOut !== null) {
+          // Comandos ESC/POS básicos (Inicialização, Texto, Corte de papel)
+          const encoder = new TextEncoder();
+          const init = new Uint8Array([0x1B, 0x40]); // ESC @
+          const text = encoder.encode("CHEGUEI CHECK-IN\nTeste de Impressao WebUSB\n\n\n\n\n");
+          const cut = new Uint8Array([0x1D, 0x56, 0x41, 0x10]); // GS V A (Corte)
+
+          // Combinar dados
+          const data = new Uint8Array(init.length + text.length + cut.length);
+          data.set(init, 0);
+          data.set(text, init.length);
+          data.set(cut, init.length + text.length);
+
+          // Enviar os dados via bulk transfer
+          await usbDevice.transferOut(endpointOut, data);
+          showToast('Teste impresso com sucesso!', 'success');
+        } else {
+          throw new Error('Endpoint de saída não encontrado na impressora.');
+        }
+
+      } catch (error) {
+        console.error('Erro ao imprimir:', error);
+        showToast('Erro ao imprimir: ' + error.message, 'error');
+        
+        // Se a impressora foi desconectada fisicamente
+        usbDevice = null;
+        updatePrinterStatus(false);
+      }
+    }
+
+    // Eventos de Listener
+    btnConnect.addEventListener('click', handlePrinterConnection);
+
+    // Escuta eventos globais de conexão/desconexão USB do navegador
+    navigator.usb.addEventListener('disconnect', event => {
+      if (usbDevice && event.device === usbDevice) {
+        usbDevice = null;
+        updatePrinterStatus(false);
+        showToast('Impressora desconectada.', 'error');
+      }
+    });
+
+  </script>
+</body>
+</html>

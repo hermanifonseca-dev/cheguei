@@ -68,13 +68,13 @@
       max-width: 1024px;
       display: flex;
       flex-direction: column;
-      padding: 2rem;
+      padding: 1rem 2rem 2rem 2rem;
       position: relative;
     }
 
     @media (min-width: 768px) {
       .app-container {
-        padding: 3rem;
+        padding: 1.5rem 3rem 3rem 3rem;
       }
     }
 
@@ -83,16 +83,16 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 2rem;
+      margin-bottom: 0.5rem;
       z-index: 10;
       position: relative;
       width: 100%;
     }
 
     .logo-container img {
-      height: 450px;
+      height: 320px;
       width: auto;
-      max-width: 90vw;
+      max-width: 85vw;
       object-fit: contain;
       filter: drop-shadow(0px 4px 12px rgba(0,0,0,0.5));
     }
@@ -177,20 +177,6 @@
       color: var(--color-text-secondary);
     }
 
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: var(--color-danger);
-      box-shadow: 0 0 8px var(--color-danger);
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .status-dot.connected {
-      background-color: var(--color-primary);
-      box-shadow: 0 0 12px var(--color-primary);
-    }
-
     .btn-connect {
       background: var(--color-primary-light);
       color: var(--color-primary);
@@ -228,8 +214,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3rem;
+      gap: 1.5rem;
       z-index: 10;
+      width: 100%;
     }
 
     .hero-text {

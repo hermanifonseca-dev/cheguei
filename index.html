@@ -486,6 +486,11 @@
 
     // Função para lidar com a conexão via WebUSB
     async function handlePrinterConnection() {
+      if (!navigator.usb) {
+        showToast('WebUSB não é suportado neste navegador ou origem (requer HTTPS ou Localhost no Chrome/Edge).', 'error');
+        return;
+      }
+
       // Se já estiver conectado, vamos simular uma impressão de teste
       if (usbDevice) {
         printTestBadge();
@@ -494,8 +499,6 @@
 
       try {
         // Solicitar acesso a um dispositivo USB.
-        // O filtro vazio permite listar todos, mas pode ser restringido por vendorId de impressoras térmicas (ex: Epson, Elgin, etc).
-        // Ex: filters: [{ vendorId: 0x04b8 }] (Epson)
         const device = await navigator.usb.requestDevice({ filters: [] });
         
         await device.open();
@@ -506,7 +509,6 @@
         }
         
         // Reivindica a interface principal para se comunicar
-        // Geralmente a interface 0 para impressoras USB classe 7.
         await device.claimInterface(0); 
 
         usbDevice = device;
@@ -516,11 +518,10 @@
       } catch (error) {
         console.error('Erro na conexão USB:', error);
         
-        // Tratamento especial se o navegador não suportar WebUSB ou o usuário cancelar
         if (error.name === 'NotFoundError') {
           showToast('Seleção de impressora cancelada.', 'error');
         } else if (error.name === 'SecurityError') {
-          showToast('Permissão negada. É necessário HTTPS.', 'error');
+          showToast('Permissão negada. Certifique-se de acessar via HTTPS ou Localhost.', 'error');
         } else {
           showToast('Erro ao conectar: ' + error.message, 'error');
         }
@@ -534,7 +535,6 @@
       showToast('Enviando impressão de teste...', 'success');
 
       try {
-        // Encontrar o EndPoint de Saída (Out)
         let endpointOut = null;
         const iface = usbDevice.configuration.interfaces[0].alternate;
         for (const ep of iface.endpoints) {
@@ -545,19 +545,16 @@
         }
 
         if (endpointOut !== null) {
-          // Comandos ESC/POS básicos (Inicialização, Texto, Corte de papel)
           const encoder = new TextEncoder();
-          const init = new Uint8Array([0x1B, 0x40]); // ESC @
+          const init = new Uint8Array([0x1B, 0x40]);
           const text = encoder.encode("CHEGUEI CHECK-IN\nTeste de Impressao WebUSB\n\n\n\n\n");
-          const cut = new Uint8Array([0x1D, 0x56, 0x41, 0x10]); // GS V A (Corte)
+          const cut = new Uint8Array([0x1D, 0x56, 0x41, 0x10]);
 
-          // Combinar dados
           const data = new Uint8Array(init.length + text.length + cut.length);
           data.set(init, 0);
           data.set(text, init.length);
           data.set(cut, init.length + text.length);
 
-          // Enviar os dados via bulk transfer
           await usbDevice.transferOut(endpointOut, data);
           showToast('Teste impresso com sucesso!', 'success');
         } else {
@@ -568,23 +565,26 @@
         console.error('Erro ao imprimir:', error);
         showToast('Erro ao imprimir: ' + error.message, 'error');
         
-        // Se a impressora foi desconectada fisicamente
         usbDevice = null;
         updatePrinterStatus(false);
       }
     }
 
     // Eventos de Listener
-    btnConnect.addEventListener('click', handlePrinterConnection);
+    if (btnConnect) {
+      btnConnect.addEventListener('click', handlePrinterConnection);
+    }
 
     // Escuta eventos globais de conexão/desconexão USB do navegador
-    navigator.usb.addEventListener('disconnect', event => {
-      if (usbDevice && event.device === usbDevice) {
-        usbDevice = null;
-        updatePrinterStatus(false);
-        showToast('Impressora desconectada.', 'error');
-      }
-    });
+    if (navigator.usb) {
+      navigator.usb.addEventListener('disconnect', event => {
+        if (usbDevice && event.device === usbDevice) {
+          usbDevice = null;
+          updatePrinterStatus(false);
+          showToast('Impressora desconectada.', 'error');
+        }
+      });
+    }
 
   </script>
 </body>

@@ -81,30 +81,91 @@
     /* Header */
     .header {
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: center;
       margin-bottom: 2rem;
       z-index: 10;
+      position: relative;
+      width: 100%;
     }
 
     .logo-container img {
-      height: 90px;
+      height: 240px;
       width: auto;
+      max-width: 100%;
       object-fit: contain;
       filter: drop-shadow(0px 4px 12px rgba(0,0,0,0.5));
     }
 
     /* Status e Conector da Impressora */
     .printer-module {
+      position: fixed;
+      bottom: 2.5rem;
+      left: 2.5rem;
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 12px;
-      background: var(--color-surface);
-      border: 1px solid var(--color-surface-elevated);
-      padding: 8px 16px;
-      border-radius: var(--radius-full);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
       transition: all 0.3s ease;
+      z-index: 99;
+    }
+
+    .printer-module:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.05);
+    }
+
+    .printer-module i {
+      font-size: 1.5rem;
+      color: var(--color-text-secondary);
+      transition: color 0.3s ease;
+    }
+
+    .printer-module.connected i {
+      color: var(--color-primary);
+    }
+
+    .crosshair-h {
+      position: absolute;
+      width: 80px;
+      height: 1px;
+      background: rgba(0, 168, 89, 0.4);
+      left: 30px;
+      top: 50%;
+      pointer-events: none;
+    }
+
+    .crosshair-v {
+      position: absolute;
+      width: 1px;
+      height: 80px;
+      background: rgba(0, 168, 89, 0.4);
+      left: 50%;
+      bottom: 30px;
+      pointer-events: none;
+    }
+
+    .status-dot {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--color-danger);
+      box-shadow: 0 0 8px var(--color-danger);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .status-dot.connected {
+      background-color: var(--color-primary);
+      box-shadow: 0 0 12px var(--color-primary);
     }
 
     .printer-status {
@@ -160,28 +221,23 @@
       font-size: 1.125rem;
     }
 
-    /* Área Principal / Split Layout */
+    /* Área Principal */
     .main-content {
       flex: 1;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      justify-content: center;
       gap: 3rem;
       z-index: 10;
     }
 
-    @media (min-width: 768px) {
-      .main-content {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-      }
-    }
-
     .hero-text {
-      flex: 1;
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      text-align: center;
+      align-items: center;
     }
 
     .hero-text h1 {
@@ -200,12 +256,11 @@
       font-size: clamp(1rem, 2vw, 1.25rem);
       color: var(--color-text-secondary);
       line-height: 1.5;
-      max-width: 400px;
+      max-width: 450px;
     }
 
     /* Caixa do Scanner */
     .scanner-container {
-      flex: 1;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -353,16 +408,13 @@
         <img src="logo_cheguei_corporate_transparent.png" alt="Cheguei Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNjAiPjx0ZXh0IHk9IjM1IiBmb250LWZhbWlseT0iU3BhY2UgR3JvdGVzaywgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMGE4NTkiPkNIRUdVRUk8L3RleHQ+PC9zdmc+'" />
       </div>
 
-      <!-- Módulo da Impressora USB -->
-      <div class="printer-module">
-        <div class="printer-status">
-          <div class="status-dot" id="status-dot"></div>
-          <span id="status-text">Desconectada</span>
-        </div>
-        <button class="btn-connect" id="btn-connect-printer">
-          <i class="ph ph-usb"></i> Conectar
-        </button>
-      </div>
+      <!-- Módulo da Impressora USB (Flutuante) -->
+      <button class="printer-module" id="btn-connect-printer" title="Conectar Impressora USB">
+        <div class="crosshair-h"></div>
+        <div class="crosshair-v"></div>
+        <i class="ph ph-usb" id="printer-icon"></i>
+        <div class="status-dot" id="status-dot"></div>
+      </button>
     </header>
 
     <!-- Conteúdo Principal -->
@@ -370,19 +422,12 @@
       
       <div class="hero-text">
         <h1>Check-in<br><span>Rápido e Fácil</span></h1>
-        <p>Aponte o QR Code do seu ingresso para a câmera do tablet para imprimir sua credencial automaticamente.</p>
+        <p>Aponte a câmera do seu celular para o QR Code abaixo para iniciar seu check-in pelo WhatsApp.</p>
       </div>
 
-      <div class="scanner-container">
-        <div class="scanner-box">
-          <div class="scanner-frame">
-            <span></span>
-            <div class="scan-line"></div>
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <i class="ph ph-qr-code scanner-icon"></i>
-              <p class="scanner-text">Posicione o<br>QR Code aqui</p>
-            </div>
-          </div>
+      <div class="whatsapp-qr-container" style="display: flex; justify-content: center; align-items: center; margin-top: 2rem;">
+        <div style="background: white; padding: 20px; border-radius: var(--radius-lg); box-shadow: var(--shadow-glow);">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fwa.me%2F553399852549%3Ftext%3DQuero%20fazer%20o%20meu%20check-in" alt="QR Code WhatsApp" style="width: 250px; height: 250px; display: block;" />
         </div>
       </div>
 
@@ -400,7 +445,7 @@
     // Referências DOM
     const btnConnect = document.getElementById('btn-connect-printer');
     const statusDot = document.getElementById('status-dot');
-    const statusText = document.getElementById('status-text');
+    const printerIcon = document.getElementById('printer-icon');
     const toast = document.getElementById('toast');
     const toastIcon = document.getElementById('toast-icon');
     const toastMessage = document.getElementById('toast-message');
@@ -427,15 +472,15 @@
     // Atualiza a UI baseada no status de conexão
     function updatePrinterStatus(connected) {
       if (connected) {
+        btnConnect.classList.add('connected');
         statusDot.classList.add('connected');
-        statusText.textContent = 'Impressora Pronta';
-        statusText.style.color = 'var(--color-primary)';
-        btnConnect.innerHTML = '<i class="ph ph-printer"></i> Imprimir Teste';
+        printerIcon.className = 'ph ph-printer';
+        btnConnect.title = 'Imprimir Teste';
       } else {
+        btnConnect.classList.remove('connected');
         statusDot.classList.remove('connected');
-        statusText.textContent = 'Desconectada';
-        statusText.style.color = 'var(--color-text-secondary)';
-        btnConnect.innerHTML = '<i class="ph ph-usb"></i> Conectar';
+        printerIcon.className = 'ph ph-usb';
+        btnConnect.title = 'Conectar Impressora USB';
       }
     }
 

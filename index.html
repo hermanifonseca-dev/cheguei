@@ -100,55 +100,46 @@
     /* Status e Conector da Impressora */
     .printer-module {
       position: fixed;
-      bottom: 2.5rem;
-      left: 2.5rem;
-      width: 60px;
-      height: 60px;
-      background: rgba(255, 255, 255, 0.05);
+      bottom: 2rem;
+      left: 2rem;
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.15);
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       transition: all 0.3s ease;
-      z-index: 99;
+      z-index: 9999;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      outline: none;
+      padding: 0;
+      appearance: none;
+      -webkit-appearance: none;
     }
 
-    .printer-module:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: scale(1.05);
+    .printer-module:hover,
+    .printer-module:active {
+      background: rgba(0, 168, 89, 0.2);
+      border-color: var(--color-primary);
+      transform: scale(1.08);
     }
 
     .printer-module i {
-      font-size: 1.5rem;
+      font-size: 2rem;
       color: var(--color-text-secondary);
       transition: color 0.3s ease;
+      pointer-events: none;
     }
 
     .printer-module.connected i {
       color: var(--color-primary);
-    }
-
-    .crosshair-h {
-      position: absolute;
-      width: 80px;
-      height: 1px;
-      background: rgba(0, 168, 89, 0.4);
-      left: 30px;
-      top: 50%;
-      pointer-events: none;
-    }
-
-    .crosshair-v {
-      position: absolute;
-      width: 1px;
-      height: 80px;
-      background: rgba(0, 168, 89, 0.4);
-      left: 50%;
-      bottom: 30px;
-      pointer-events: none;
     }
 
     .status-dot {
@@ -394,14 +385,6 @@
         <!-- Logo do Cheguei -->
         <img src="logo_cheguei_corporate_transparent.png" alt="Cheguei Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNjAiPjx0ZXh0IHk9IjM1IiBmb250LWZhbWlseT0iU3BhY2UgR3JvdGVzaywgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMwMGE4NTkiPkNIRUdVRUk8L3RleHQ+PC9zdmc+'" />
       </div>
-
-      <!-- Módulo da Impressora USB (Flutuante) -->
-      <button class="printer-module" id="btn-connect-printer" title="Conectar Impressora USB">
-        <div class="crosshair-h"></div>
-        <div class="crosshair-v"></div>
-        <i class="ph ph-usb" id="printer-icon"></i>
-        <div class="status-dot" id="status-dot"></div>
-      </button>
     </header>
 
     <!-- Conteúdo Principal -->
@@ -421,6 +404,12 @@
     </main>
 
   </div>
+
+  <!-- Botão Flutuante da Impressora USB (FORA do container para evitar z-index issues) -->
+  <button class="printer-module" id="btn-connect-printer" title="Conectar Impressora USB">
+    <i class="ph ph-usb" id="printer-icon"></i>
+    <div class="status-dot" id="status-dot"></div>
+  </button>
 
   <!-- Notificações Toast -->
   <div class="toast-container" id="toast">
@@ -557,9 +546,13 @@
       }
     }
 
-    // Eventos de Listener
+    // Eventos de Listener (click + touchend para tablets)
     if (btnConnect) {
       btnConnect.addEventListener('click', handlePrinterConnection);
+      btnConnect.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        handlePrinterConnection();
+      });
     }
 
     // Escuta eventos globais de conexão/desconexão USB do navegador

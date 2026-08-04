@@ -605,46 +605,66 @@
 
     let isProcessingQueue = false;
 
-    // Extrai apenas o Primeiro e Último Nome (ex: "RODRIGO FONSECA DE LIMA" -> "RODRIGO LIMA")
+    // Remove acentos e caracteres especiais para evitar símbolos quebrados/quadrados na Elgin ZPL (Font 0)
+    function cleanZPLText(str) {
+      if (!str) return '';
+      return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[çÇ]/g, 'C')
+        .replace(/[ãÃ]/g, 'A')
+        .replace(/[õÕ]/g, 'O')
+        .replace(/[áàâäÁÀÂÄ]/g, 'A')
+        .replace(/[éèêëÉÈÊË]/g, 'E')
+        .replace(/[íìîïÍÌÎÏ]/g, 'I')
+        .replace(/[óòôöÓÒÔÖ]/g, 'O')
+        .replace(/[úùûüÚÙÛÜ]/g, 'U')
+        .replace(/[^\w\s\-\.\,\&\/]/gi, '')
+        .trim();
+    }
+
+    // Extrai apenas o PRIMEIRO e ÚLTIMO NOME sem acentos (ex: "HERMANI GOMES GONÇALVES" -> "HERMANI GONCALVES")
     function getFirstAndLastName(fullName) {
       if (!fullName) return 'PARTICIPANTE';
-      const parts = fullName.trim().split(/\s+/);
+      const clean = cleanZPLText(fullName);
+      const parts = clean.split(/\s+/).filter(Boolean);
       if (parts.length === 1) return parts[0].toUpperCase();
       return `${parts[0]} ${parts[parts.length - 1]}`.toUpperCase();
     }
 
-    // Impressão de etiqueta ZPL individual com dados do participante (Modelo Crachá)
+    // Impressão de etiqueta ZPL individual com dados do participante (Modelo Crachá Idêntico à Foto 1)
     async function printParticipantLabel(inscricao) {
       if (!usbDevice || outEndpoint === null) return false;
       
       const nomeFormatado = getFirstAndLastName(inscricao.nome);
       
+      const cargoClean = cleanZPLText(inscricao.cargo).toUpperCase();
+      const empresaClean = cleanZPLText(inscricao.orgao_empresa || inscricao.empresa).toUpperCase();
+      
       let cargoEmpresa = '';
-      if (inscricao.cargo && (inscricao.orgao_empresa || inscricao.empresa)) {
-        cargoEmpresa = `${inscricao.cargo} - ${inscricao.orgao_empresa || inscricao.empresa}`;
+      if (cargoClean && empresaClean) {
+        cargoEmpresa = `${cargoClean} - ${empresaClean}`;
       } else {
-        cargoEmpresa = inscricao.cargo || inscricao.orgao_empresa || inscricao.empresa || '';
+        cargoEmpresa = cargoClean || empresaClean;
       }
-      cargoEmpresa = cargoEmpresa.toUpperCase();
 
-      const cidade = (inscricao.cidade || '').toUpperCase();
+      const cidade = cleanZPLText(inscricao.cidade).toUpperCase();
 
       const encoder = new TextEncoder();
-      // Comando ZPL com alinhamento centralizado (^FB600,1,0,C,0) correspondente à foto
-      const zplCommand = `
-^XA
+      // Comando ZPL centralizado, limpo e sem caracteres corrompidos
+      const zplCommand = `^XA
 ^PW600
-^CF0,50
-^FO0,35^FB600,1,0,C,0^FD${nomeFormatado}^FS
+^LL220
+^CF0,48
+^FO0,30^FB600,1,0,C,0^FD${nomeFormatado}^FS
 ^CF0,26
 ^FO0,95^FB600,1,0,C,0^FD${cargoEmpresa}^FS
-^CF0,26
-^FO0,135^FB600,1,0,C,0^FD${cidade}^FS
-^XZ
-`;
+^CF0,24
+^FO0,140^FB600,1,0,C,0^FD${cidade}^FS
+^XZ`;
 
       const data = encoder.encode(zplCommand);
-      console.log('Enviando etiqueta ZPL para:', nomeFormatado);
+      console.log('Enviando etiqueta ZPL limpa para:', nomeFormatado);
       await usbDevice.transferOut(outEndpoint, data);
       return true;
     }
@@ -718,7 +738,7 @@
     // Inicia verificação automática a cada 3 segundos
     setInterval(checkPendingPrints, 3000);
 
-    // Impressão de teste manual usando o layout idêntico à foto
+    // Impressão de teste manual usando o layout idêntico à Foto 1
     async function printTestLabel() {
       if (!usbDevice || outEndpoint === null) return;
       
@@ -726,17 +746,16 @@
 
       try {
         const encoder = new TextEncoder();
-        const zplCommand = `
-^XA
+        const zplCommand = `^XA
 ^PW600
-^CF0,50
-^FO0,35^FB600,1,0,C,0^FDHERMANI FONSECA^FS
+^LL220
+^CF0,48
+^FO0,30^FB600,1,0,C,0^FDHERMANI FONSECA^FS
 ^CF0,26
 ^FO0,95^FB600,1,0,C,0^FDDESENVOLVEDOR DE SISTEMAS - POLIS GESTAO^FS
-^CF0,26
-^FO0,135^FB600,1,0,C,0^FDGOVERNADOR VALADARES^FS
-^XZ
-`;
+^CF0,24
+^FO0,140^FB600,1,0,C,0^FDGOVERNADOR VALADARES^FS
+^XZ`;
 
         const data = encoder.encode(zplCommand);
         await usbDevice.transferOut(outEndpoint, data);

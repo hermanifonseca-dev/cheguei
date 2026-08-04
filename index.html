@@ -605,33 +605,46 @@
 
     let isProcessingQueue = false;
 
-    // Impressão de etiqueta ZPL individual com dados do participante
+    // Extrai apenas o Primeiro e Último Nome (ex: "RODRIGO FONSECA DE LIMA" -> "RODRIGO LIMA")
+    function getFirstAndLastName(fullName) {
+      if (!fullName) return 'PARTICIPANTE';
+      const parts = fullName.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].toUpperCase();
+      return `${parts[0]} ${parts[parts.length - 1]}`.toUpperCase();
+    }
+
+    // Impressão de etiqueta ZPL individual com dados do participante (Modelo Crachá)
     async function printParticipantLabel(inscricao) {
       if (!usbDevice || outEndpoint === null) return false;
       
-      const nome = (inscricao.nome || 'PARTICIPANTE').toUpperCase();
-      const empresa = (inscricao.orgao_empresa || inscricao.cidade || '').toUpperCase();
-      const cargo = (inscricao.cargo || '').toUpperCase();
-      const codigo = inscricao.codigo_inscricao || String(inscricao.id).padStart(8, '0');
+      const nomeFormatado = getFirstAndLastName(inscricao.nome);
+      
+      let cargoEmpresa = '';
+      if (inscricao.cargo && (inscricao.orgao_empresa || inscricao.empresa)) {
+        cargoEmpresa = `${inscricao.cargo} - ${inscricao.orgao_empresa || inscricao.empresa}`;
+      } else {
+        cargoEmpresa = inscricao.cargo || inscricao.orgao_empresa || inscricao.empresa || '';
+      }
+      cargoEmpresa = cargoEmpresa.toUpperCase();
+
+      const cidade = (inscricao.cidade || '').toUpperCase();
 
       const encoder = new TextEncoder();
+      // Comando ZPL com alinhamento centralizado (^FB600,1,0,C,0) correspondente à foto
       const zplCommand = `
 ^XA
+^PW600
 ^CF0,50
-^FO40,40^FD${nome}^FS
-^CF0,30
-^FO40,100^FD${empresa}^FS
+^FO0,35^FB600,1,0,C,0^FD${nomeFormatado}^FS
 ^CF0,26
-^FO40,140^FD${cargo}^FS
-^FO40,175^FD--------------------------------^FS
-^BY2
-^FO40,195^BCN,75,Y,N,N
-^FD${codigo}^FS
+^FO0,95^FB600,1,0,C,0^FD${cargoEmpresa}^FS
+^CF0,26
+^FO0,135^FB600,1,0,C,0^FD${cidade}^FS
 ^XZ
 `;
 
       const data = encoder.encode(zplCommand);
-      console.log('Enviando etiqueta ZPL para:', nome);
+      console.log('Enviando etiqueta ZPL para:', nomeFormatado);
       await usbDevice.transferOut(outEndpoint, data);
       return true;
     }
@@ -663,7 +676,7 @@
           console.log(`Fila de Impressão: ${pendentes.length} etiqueta(s) pendente(s)`);
           
           for (const item of pendentes) {
-            showToast(`🖨️ Imprimindo: ${item.nome}`, 'success');
+            showToast(`🖨️ Imprimindo: ${getFirstAndLastName(item.nome)}`, 'success');
             
             try {
               const impressoOK = await printParticipantLabel(item);
@@ -682,7 +695,7 @@
                   console.error(`Erro ao atualizar impresso=true para ID ${item.id}:`, updateErr);
                 } else {
                   console.log(`✅ Inscrição #${item.id} (${item.nome}) impressa e atualizada no Supabase!`);
-                  showToast(`✅ Etiqueta impressa: ${item.nome}`, 'success');
+                  showToast(`✅ Etiqueta impressa: ${getFirstAndLastName(item.nome)}`, 'success');
                 }
               }
             } catch (printErr) {
@@ -705,7 +718,7 @@
     // Inicia verificação automática a cada 3 segundos
     setInterval(checkPendingPrints, 3000);
 
-    // Impressão de teste manual usando ZPL (compatível com Elgin L42 Pro Full)
+    // Impressão de teste manual usando o layout idêntico à foto
     async function printTestLabel() {
       if (!usbDevice || outEndpoint === null) return;
       
@@ -715,19 +728,13 @@
         const encoder = new TextEncoder();
         const zplCommand = `
 ^XA
-^CF0,60
-^FO50,50^FDCHEGUEI^FS
-^CF0,35
-^FO50,130^FDCheck-in Automatico^FS
-^CF0,30
-^FO50,180^FDImpressao de Teste^FS
-^FO50,230^FD----------------------------^FS
-^CF0,25
-^FO50,280^FDElgin L42 Pro Full^FS
-^FO50,320^FDConectada via WebUSB^FS
-^FO50,380^BY2
-^BCN,80,Y,N,N
-^FD123456789^FS
+^PW600
+^CF0,50
+^FO0,35^FB600,1,0,C,0^FDHERMANI FONSECA^FS
+^CF0,26
+^FO0,95^FB600,1,0,C,0^FDDESENVOLVEDOR DE SISTEMAS - POLIS GESTAO^FS
+^CF0,26
+^FO0,135^FB600,1,0,C,0^FDGOVERNADOR VALADARES^FS
 ^XZ
 `;
 

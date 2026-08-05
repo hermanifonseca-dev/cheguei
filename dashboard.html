@@ -352,6 +352,49 @@
       color: var(--color-text-muted);
     }
 
+    /* Botões Interativos de Check-in e Impressão */
+    .btn-action-toggle {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: var(--radius-full);
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      border: 1px solid transparent; transition: var(--transition);
+      font-family: inherit; outline: none;
+    }
+    
+    .btn-checkin-yes {
+      background: rgba(34, 197, 94, 0.15); color: var(--color-success);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+    .btn-checkin-yes:hover {
+      background: rgba(239, 68, 68, 0.2); color: var(--color-danger);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    .btn-checkin-no {
+      background: var(--color-primary-light); color: var(--color-primary);
+      border-color: rgba(0, 168, 89, 0.3);
+    }
+    .btn-checkin-no:hover {
+      background: var(--color-primary); color: #fff;
+      box-shadow: 0 0 12px var(--color-primary-glow);
+    }
+
+    .btn-print-yes {
+      background: rgba(59, 130, 246, 0.15); color: #60a5fa;
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+    .btn-print-yes:hover {
+      background: rgba(245, 158, 11, 0.2); color: var(--color-warning);
+    }
+
+    .btn-print-no {
+      background: rgba(161, 161, 170, 0.1); color: var(--color-text-muted);
+      border-color: rgba(161, 161, 170, 0.2);
+    }
+    .btn-print-no:hover {
+      background: rgba(59, 130, 246, 0.2); color: #60a5fa;
+    }
+
     /* Pulse de atualização */
     .refresh-dot {
       width: 8px; height: 8px;
@@ -511,9 +554,14 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title"><i class="ph ph-list-checks" style="color:var(--color-primary);"></i> Participantes</span>
-          <div class="search-bar">
-            <i class="ph ph-magnifying-glass" style="color:var(--color-text-muted);"></i>
-            <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nome...">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="search-bar">
+              <i class="ph ph-magnifying-glass" style="color:var(--color-text-muted);"></i>
+              <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nome...">
+            </div>
+            <button class="btn btn-primary" id="btnOpenModalInscricao" style="padding:6px 14px; font-size:0.8rem;">
+              <i class="ph ph-user-plus"></i> + Nova Inscrição
+            </button>
           </div>
         </div>
         <div class="table-scroll">
@@ -523,8 +571,8 @@
                 <th>Nome</th>
                 <th>Cargo / Empresa</th>
                 <th>Cidade</th>
-                <th style="text-align:center;">Check-in</th>
-                <th style="text-align:center;">Impresso</th>
+                <th style="text-align:center;">Check-in (Manual)</th>
+                <th style="text-align:center;">Impresso (Reimprimir)</th>
               </tr>
             </thead>
             <tbody id="participantsBody">
@@ -541,6 +589,44 @@
 
     </div>
   </main>
+
+  <!-- Modal Inscrição Manual -->
+  <div class="modal-backdrop" id="modalInscricao" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:var(--transition);">
+    <div class="modal-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);width:90%;max-width:500px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--color-border);padding-bottom:14px;">
+        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;display:flex;align-items:center;gap:8px;">
+          <i class="ph ph-user-plus" style="color:var(--color-primary);"></i> Cadastrar Participante
+        </h3>
+        <button id="btnCloseModalInscricao" style="background:none;border:none;color:var(--color-text-secondary);font-size:1.4rem;cursor:pointer;">&times;</button>
+      </div>
+      <form id="formInscricao">
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Nome Completo *</label>
+          <input type="text" id="insNome" required placeholder="Ex: João da Silva" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Cargo</label>
+          <input type="text" id="insCargo" placeholder="Ex: Desenvolvedor / Analista" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Órgão / Empresa</label>
+          <input type="text" id="insEmpresa" placeholder="Ex: Prefeitura de Belo Horizonte" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+        </div>
+        <div style="margin-bottom:18px;">
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Cidade</label>
+          <input type="text" id="insCidade" placeholder="Ex: Belo Horizonte / MG" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+        </div>
+        <div style="margin-bottom:22px;background:rgba(0,168,89,0.08);border:1px solid rgba(0,168,89,0.2);padding:12px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="insCheckin" checked style="width:18px;height:18px;accent-color:var(--color-primary);cursor:pointer;">
+          <label for="insCheckin" style="font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--color-text);">Realizar Check-in imediatamente ao salvar</label>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button type="button" id="btnCancelInscricao" class="btn btn-ghost">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Participante</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Toast -->
   <div class="toast" id="toast">
@@ -798,19 +884,138 @@
             <td style="color:var(--color-text-secondary);">${i.cidade || '—'}</td>
             <td style="text-align:center;">
               ${i.confirmado
-                ? '<span class="status-badge status-yes">✅ Sim</span>'
-                : '<span class="status-badge status-no">— Não</span>'}
+                ? `<button class="btn-action-toggle btn-checkin-yes" onclick="toggleCheckin(${i.id}, false)" title="Clique para cancelar o check-in">
+                    <i class="ph ph-check-circle"></i> Confirmado
+                   </button>`
+                : `<button class="btn-action-toggle btn-checkin-no" onclick="toggleCheckin(${i.id}, true)" title="Clique para realizar check-in manual">
+                    <i class="ph ph-circle"></i> Check-in
+                   </button>`}
             </td>
             <td style="text-align:center;">
               ${i.impresso
-                ? '<span class="status-badge status-yes">🖨️ Sim</span>'
-                : '<span class="status-badge status-no">— Não</span>'}
+                ? `<button class="btn-action-toggle btn-print-yes" onclick="toggleImpresso(${i.id}, false)" title="Clique para agendar reimpressão">
+                    <i class="ph ph-printer"></i> Impresso (Reimprimir)
+                   </button>`
+                : `<button class="btn-action-toggle btn-print-no" onclick="toggleImpresso(${i.id}, true)" title="Marcar como impresso">
+                    <i class="ph ph-clock"></i> Pendente
+                   </button>`}
             </td>
           </tr>`;
       }).join('');
     }
 
-    // ─────────────── 6. Auto-Refresh ───────────────
+    // ─────────────── 6. Check-in Manual ───────────────
+    window.toggleCheckin = async function(id, novoStatus) {
+      if (!sb) return;
+      try {
+        const { error } = await sb
+          .from('inscricoes')
+          .update({ 
+            confirmado: novoStatus,
+            data_confirmacao: novoStatus ? new Date().toISOString() : null
+          })
+          .eq('id', id);
+
+        if (error) throw error;
+
+        const i = inscricoes.find(item => item.id === id);
+        const nome = i ? i.nome : 'Participante';
+        
+        showToast(novoStatus ? `✅ Check-in de "${nome}" realizado!` : `⚪ Check-in de "${nome}" desfeito.`);
+        await loadDashboard();
+      } catch (err) {
+        console.error('Erro ao alterar check-in:', err);
+        showToast('Erro ao atualizar check-in: ' + err.message);
+      }
+    };
+
+    // ─────────────── 7. Marcar / Reimprimir Etiqueta ───────────────
+    window.toggleImpresso = async function(id, novoStatus) {
+      if (!sb) return;
+      try {
+        const { error } = await sb
+          .from('inscricoes')
+          .update({ 
+            impresso: novoStatus,
+            data_impressao: novoStatus ? new Date().toISOString() : null
+          })
+          .eq('id', id);
+
+        if (error) throw error;
+
+        const i = inscricoes.find(item => item.id === id);
+        const nome = i ? i.nome : 'Participante';
+
+        showToast(novoStatus ? `🖨️ "${nome}" marcado como impresso!` : `🔄 "${nome}" enviado para a fila de reimpressão!`);
+        await loadDashboard();
+      } catch (err) {
+        console.error('Erro ao alterar status de impressão:', err);
+        showToast('Erro ao atualizar impressão: ' + err.message);
+      }
+    };
+
+    // ─────────────── 8. Cadastro Manual de Inscrição ───────────────
+    const modalInscricao = document.getElementById('modalInscricao');
+    const formInscricao  = document.getElementById('formInscricao');
+    const btnOpenModalInscricao  = document.getElementById('btnOpenModalInscricao');
+    const btnCloseModalInscricao = document.getElementById('btnCloseModalInscricao');
+    const btnCancelInscricao    = document.getElementById('btnCancelInscricao');
+
+    function openModalInscricao() {
+      if (!selectedEventId) {
+        showToast('Selecione um evento antes de cadastrar.');
+        return;
+      }
+      formInscricao.reset();
+      document.getElementById('insCheckin').checked = true;
+      modalInscricao.style.opacity = '1';
+      modalInscricao.style.pointerEvents = 'auto';
+    }
+
+    function closeModalInscricao() {
+      modalInscricao.style.opacity = '0';
+      modalInscricao.style.pointerEvents = 'none';
+    }
+
+    btnOpenModalInscricao.addEventListener('click', openModalInscricao);
+    btnCloseModalInscricao.addEventListener('click', closeModalInscricao);
+    btnCancelInscricao.addEventListener('click', closeModalInscricao);
+
+    formInscricao.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!sb || !selectedEventId) return;
+
+      const nome = document.getElementById('insNome').value.trim();
+      const cargo = document.getElementById('insCargo').value.trim() || null;
+      const empresa = document.getElementById('insEmpresa').value.trim() || null;
+      const cidade = document.getElementById('insCidade').value.trim() || null;
+      const checkinImediato = document.getElementById('insCheckin').checked;
+
+      try {
+        const payload = {
+          evento_id: selectedEventId,
+          nome: nome,
+          cargo: cargo,
+          orgao_empresa: empresa,
+          cidade: cidade,
+          confirmado: checkinImediato,
+          data_confirmacao: checkinImediato ? new Date().toISOString() : null,
+          impresso: false
+        };
+
+        const { error } = await sb.from('inscricoes').insert([payload]);
+        if (error) throw error;
+
+        showToast(`✅ Participante "${nome}" cadastrado com sucesso!`);
+        closeModalInscricao();
+        await loadDashboard();
+      } catch (err) {
+        console.error('Erro ao cadastrar participante:', err);
+        showToast('Erro ao salvar participante: ' + err.message);
+      }
+    });
+
+    // ─────────────── 9. Auto-Refresh ───────────────
     function startAutoRefresh() {
       if (refreshInterval) clearInterval(refreshInterval);
       refreshInterval = setInterval(() => {

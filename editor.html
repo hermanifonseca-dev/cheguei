@@ -1052,9 +1052,14 @@
         const el = getSelectedElement();
         if (el) {
           el.align = 'C';
-          el.x_mm = 0;
+          if (el.type === 'line') {
+            const lineW = el.width_mm || (labelState.width_mm - 10);
+            el.x_mm = Math.max(0, (labelState.width_mm - lineW) / 2);
+          } else {
+            el.x_mm = 0;
+          }
           propAlign.value = 'C';
-          propX.value = 0;
+          propX.value = el.x_mm;
           renderCanvas();
           updateZPLCode();
         }
@@ -1237,14 +1242,20 @@
       let zpl = `^XA\n^PW${widthDots}\n^LL${heightDots}\n^LH0,0\n`;
 
       labelState.elements.forEach(el => {
-        const xDots = Math.round((el.x_mm || 0) * 8);
-        const yDots = Math.round((el.y_mm || 0) * 8);
-
         if (el.type === 'line') {
-          const lineWidthDots = Math.round((el.width_mm || labelState.width_mm) * 8);
+          const lineW_MM = el.width_mm || (labelState.width_mm - 10);
+          let x_MM = el.x_mm;
+          if (el.align === 'C' || el.x_mm === undefined || el.x_mm === 0) {
+            x_MM = (labelState.width_mm - lineW_MM) / 2;
+          }
+          const xDots = Math.round(x_MM * 8);
+          const yDots = Math.round((el.y_mm || 0) * 8);
+          const lineWidthDots = Math.round(lineW_MM * 8);
           const thickness = el.thickness || 3;
           zpl += `^FO${xDots},${yDots}^GB${lineWidthDots},0,${thickness},B,0^FS\n`;
         } else {
+          const xDots = Math.round((el.x_mm || 0) * 8);
+          const yDots = Math.round((el.y_mm || 0) * 8);
           const content = mockData ? getMockText(el.content) : el.content;
           const align = el.align || 'C';
 

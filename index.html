@@ -737,14 +737,20 @@
         zplCommand = `^XA\n^PW${widthDots}\n^LL${heightDots}\n^LH0,0\n`;
 
         activeState.elements.forEach(el => {
-          const xDots = Math.round((el.x_mm || 0) * 8);
-          const yDots = Math.round((el.y_mm || 0) * 8);
-
           if (el.type === 'line') {
-            const lineWidthDots = Math.round((el.width_mm || activeState.width_mm) * 8);
+            const lineW_MM = el.width_mm || (activeState.width_mm - 10);
+            let x_MM = el.x_mm;
+            if (el.align === 'C' || el.x_mm === undefined || el.x_mm === 0) {
+              x_MM = (activeState.width_mm - lineW_MM) / 2;
+            }
+            const xDots = Math.round(x_MM * 8);
+            const yDots = Math.round((el.y_mm || 0) * 8);
+            const lineWidthDots = Math.round(lineW_MM * 8);
             const thickness = el.thickness || 3;
             zplCommand += `^FO${xDots},${yDots}^GB${lineWidthDots},0,${thickness},B,0^FS\n`;
           } else {
+            const xDots = Math.round((el.x_mm || 0) * 8);
+            const yDots = Math.round((el.y_mm || 0) * 8);
             const align = el.align || 'C';
             let val = el.content || '';
             if (val === '${nome}') val = nomeFormatado;

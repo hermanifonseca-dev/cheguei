@@ -731,33 +731,42 @@
     eventForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      const editingId = eventId.value ? parseInt(eventId.value) : null;
+
       const payload = {
         nome: formNome.value.trim(),
         codigo_evento: formCodigo.value.trim() || ('0000000' + Date.now()).slice(-8),
         slug: formSlug.value.trim() || formNome.value.toLowerCase().replace(/\s+/g, '-'),
-        subtitulo: formSubtitulo.value.trim(),
-        data_evento: formData.value,
-        horario: formHorario.value.trim(),
-        local: formLocal.value.trim(),
+        subtitulo: formSubtitulo.value.trim() || null,
+        data_evento: formData.value || null,
+        horario: formHorario.value.trim() || null,
+        local: formLocal.value.trim() || null,
         vagas_totais: parseInt(formVagas.value) || 50,
         status: formStatus.value
       };
 
+      console.log('Payload:', payload, 'Editing ID:', editingId);
+
       try {
         if (payload.status === 'ativo') {
           // Se for definido como ativo, desativa os outros eventos
-          await supabaseClient
+          const desativQuery = supabaseClient
             .from('eventos')
             .update({ status: 'inativo' })
-            .neq('id', eventId.value || 0);
+            .eq('status', 'ativo');
+          
+          if (editingId) {
+            desativQuery.neq('id', editingId);
+          }
+          await desativQuery;
         }
 
-        if (eventId.value) {
+        if (editingId) {
           // UPDATE
           const { error } = await supabaseClient
             .from('eventos')
             .update(payload)
-            .eq('id', eventId.value);
+            .eq('id', editingId);
 
           if (error) throw error;
           showToast('✅ Evento atualizado com sucesso!', 'success');
@@ -787,7 +796,7 @@
         fetchEvents();
       } catch (err) {
         console.error('Erro ao salvar evento:', err);
-        showToast('Erro ao salvar evento: ' + err.message, 'error');
+        showToast('Erro ao salvar evento: ' + (err.message || JSON.stringify(err)), 'error');
       }
     });
 

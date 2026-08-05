@@ -676,12 +676,11 @@
       return `${parts[0]} ${parts[parts.length - 1]}`.toUpperCase();
     }
 
-    // Impressão de etiqueta ZPL individual com dados do participante (Modelo Crachá Idêntico à Foto 1)
+    // Impressão de etiqueta ZPL individual com dados do participante (Usa modelo salvo no localStorage se existir)
     async function printParticipantLabel(inscricao) {
       if (!usbDevice || outEndpoint === null) return false;
       
       const nomeFormatado = getFirstAndLastName(inscricao.nome);
-      
       const cargoClean = cleanZPLText(inscricao.cargo).toUpperCase();
       const empresaClean = cleanZPLText(inscricao.orgao_empresa || inscricao.empresa).toUpperCase();
       
@@ -694,9 +693,41 @@
 
       const cidade = cleanZPLText(inscricao.cidade).toUpperCase();
 
-      const encoder = new TextEncoder();
-      // Comando ZPL com largura física de 640 dots (80mm), redefinição de origem ^LH0,0 e Cargo-Empresa tamanho 25 centralizado
-      const zplCommand = `^XA
+      let zplCommand = '';
+      const savedTemplate = localStorage.getItem('cheguei_label_template');
+
+      if (savedTemplate) {
+        try {
+          const state = JSON.parse(savedTemplate);
+          const widthDots = Math.round((state.width_mm || 80) * 8);
+          const heightDots = Math.round((state.height_mm || 30) * 8);
+
+          zplCommand = `^XA\n^PW${widthDots}\n^LL${heightDots}\n^LH0,0\n`;
+
+          state.elements.forEach(el => {
+            const xDots = Math.round((el.x_mm || 0) * 8);
+            const yDots = Math.round((el.y_mm || 0) * 8);
+            const align = el.align || 'C';
+            
+            let val = el.content || '';
+            if (val === '${nome}') val = nomeFormatado;
+            else if (val === '${cargo_empresa}') val = cargoEmpresa;
+            else if (val === '${cidade}') val = cidade;
+
+            zplCommand += `^CF0,${el.font_size || 30}\n`;
+            zplCommand += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${val}^FS\n`;
+          });
+
+          zplCommand += `^XZ`;
+          console.log('Utilizando modelo personalizado do localStorage para:', nomeFormatado);
+        } catch (e) {
+          console.error('Erro ao ler modelo customizado do localStorage, usando padrão:', e);
+          savedTemplate = null;
+        }
+      }
+
+      if (!savedTemplate || !zplCommand) {
+        zplCommand = `^XA
 ^PW640
 ^LL240
 ^LH0,0
@@ -707,9 +738,11 @@
 ^CF0,25
 ^FO0,152^FB640,1,0,C,0^FD${cidade}^FS
 ^XZ`;
+      }
 
+      const encoder = new TextEncoder();
       const data = encoder.encode(zplCommand);
-      console.log('Enviando etiqueta ZPL limpa para:', nomeFormatado);
+      console.log('Enviando etiqueta ZPL para:', nomeFormatado);
       await usbDevice.transferOut(outEndpoint, data);
       return true;
     }

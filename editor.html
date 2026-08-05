@@ -491,11 +491,20 @@
         <i class="ph ph-arrow-counter-clockwise"></i> Resetar
       </button>
 
-      <button class="btn btn-secondary" id="btnSaveJSON" title="Salvar Modelo JSON">
-        <i class="ph ph-download-simple"></i> JSON
+      <button class="btn btn-secondary" id="btnSaveJSON" title="Baixar Modelo JSON">
+        <i class="ph ph-download-simple"></i> Baixar JSON
       </button>
 
-      <button class="btn btn-primary" id="btnPrintTest">
+      <label class="btn btn-secondary" style="cursor: pointer;" title="Carregar Modelo JSON">
+        <i class="ph ph-folder-open"></i> Carregar JSON
+        <input type="file" id="inputLoadJSON" accept=".json" style="display: none;">
+      </label>
+
+      <button class="btn btn-primary" id="btnSaveLayout" title="Salvar Alterações no Navegador">
+        <i class="ph ph-floppy-disk"></i> Salvar Modelo
+      </button>
+
+      <button class="btn btn-secondary" id="btnPrintTest">
         <i class="ph ph-printer"></i> Imprimir Teste
       </button>
     </div>
@@ -691,6 +700,22 @@
 
     // 1. INICIALIZAÇÃO
     function init() {
+      // Carrega modelo salvo do localStorage, se existir
+      const savedLayout = localStorage.getItem('cheguei_label_template');
+      if (savedLayout) {
+        try {
+          const parsed = JSON.parse(savedLayout);
+          if (parsed && Array.isArray(parsed.elements)) {
+            labelState = parsed;
+            inputWidthMM.value = labelState.width_mm || 80;
+            inputHeightMM.value = labelState.height_mm || 30;
+            console.log('Modelo carregado do localStorage com sucesso.');
+          }
+        } catch (e) {
+          console.error('Erro ao ler modelo do localStorage:', e);
+        }
+      }
+
       renderCanvas();
       setupEventListeners();
       updateZPLCode();
@@ -962,7 +987,13 @@
         showToast('Código ZPL copiado para a área de transferência!', 'success');
       });
 
-      // Salvar JSON
+      // Salvar Modelo no LocalStorage (Navegador)
+      document.getElementById('btnSaveLayout').addEventListener('click', () => {
+        localStorage.setItem('cheguei_label_template', JSON.stringify(labelState));
+        showToast('✅ Layout da etiqueta salvo com sucesso!', 'success');
+      });
+
+      // Baixar Modelo JSON
       document.getElementById('btnSaveJSON').addEventListener('click', () => {
         const jsonStr = JSON.stringify(labelState, null, 2);
         const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -973,8 +1004,39 @@
         showToast('Modelo JSON baixado com sucesso!', 'success');
       });
 
+      // Carregar Modelo de Arquivo JSON
+      const inputLoadJSON = document.getElementById('inputLoadJSON');
+      if (inputLoadJSON) {
+        inputLoadJSON.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const loaded = JSON.parse(event.target.result);
+              if (loaded && Array.isArray(loaded.elements)) {
+                labelState = loaded;
+                inputWidthMM.value = labelState.width_mm || 80;
+                inputHeightMM.value = labelState.height_mm || 30;
+                selectedElementId = null;
+                renderCanvas();
+                updateZPLCode();
+                localStorage.setItem('cheguei_label_template', JSON.stringify(labelState));
+                showToast('✅ Modelo JSON carregado e salvo com sucesso!', 'success');
+              } else {
+                showToast('Arquivo JSON inválido.', 'error');
+              }
+            } catch (err) {
+              showToast('Erro ao ler arquivo JSON: ' + err.message, 'error');
+            }
+          };
+          reader.readAsText(file);
+        });
+      }
+
       // Resetar Modelo
       document.getElementById('btnResetTemplate').addEventListener('click', () => {
+        localStorage.removeItem('cheguei_label_template');
         labelState = {
           width_mm: 80,
           height_mm: 30,
@@ -990,7 +1052,7 @@
         selectedElementId = null;
         renderCanvas();
         updateZPLCode();
-        showToast('Modelo restaurado para o padrão!', 'success');
+        showToast('Modelo restaurado para o padrão original!', 'success');
       });
 
       // Conexão WebUSB

@@ -856,30 +856,25 @@
     // Inicia verificação automática a cada 3 segundos
     setInterval(checkPendingPrints, 3000);
 
-    // Impressão de teste manual usando o layout idêntico à Foto 1 com Cargo-Empresa tamanho 30
+    // Impressão de teste manual usando o modelo personalizado (local ou Supabase)
     async function printTestLabel() {
       if (!usbDevice || outEndpoint === null) return;
       
       showToast('Enviando etiqueta de teste...', 'success');
 
       try {
-        const encoder = new TextEncoder();
-        const zplCommand = `^XA
-^PW640
-^LL240
-^LH0,0
-^CF0,52
-^FO0,35^FB640,1,0,C,0^FDHERMANI FONSECA^FS
-^CF0,25
-^FO0,105^FB640,1,0,C,0^FDDESENVOLVEDOR DE SISTEMAS - POLIS GESTAO^FS
-^CF0,25
-^FO0,152^FB640,1,0,C,0^FDGOVERNADOR VALADARES^FS
-^XZ`;
+        const testInscricao = {
+          nome: 'HERMANI FONSECA',
+          cargo: 'DESENVOLVEDOR',
+          orgao_empresa: 'POLIS GESTAO',
+          cidade: 'GOVERNADOR VALADARES',
+          evento_id: 1
+        };
 
-        const data = encoder.encode(zplCommand);
-        await usbDevice.transferOut(outEndpoint, data);
-        showToast('✅ Etiqueta de teste impressa com sucesso!', 'success');
-
+        const ok = await printParticipantLabel(testInscricao);
+        if (ok) {
+          showToast('✅ Etiqueta de teste impressa com sucesso!', 'success');
+        }
       } catch (error) {
         console.error('Erro ao imprimir:', error);
         showToast('Erro ao imprimir: ' + error.message, 'error');

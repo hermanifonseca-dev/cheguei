@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cheguei - Editor Visual de Etiquetas ZPL</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    :root {
+      --color-primary: #00a859;
+      --color-primary-hover: #008f4c;
+      --color-primary-light: rgba(0, 168, 89, 0.15);
+      
+      --color-bg-base: #09090b;
+      --color-surface: #18181b;
+      --color-surface-elevated: #27272a;
+      --color-border: #3f3f46;
+      
+      --color-text-primary: #fafafa;
+      --color-text-secondary: #a1a1aa;
+      --color-text-muted: #71717a;
+
+      --color-danger: #ef4444;
+      --color-warning: #f59e0b;
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+
+      --shadow-glow: 0 0 25px rgba(0, 168, 89, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: var(--color-bg-base);
+      color: var(--color-text-primary);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* BARRA SUPERIOR (HEADER) */
+    .editor-header {
+      height: 60px;
+      background-color: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 50;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--color-text-secondary);
+    }
+
+    .brand-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-tag {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background-color: var(--color-primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-secondary {
+      background-color: var(--color-surface-elevated);
+      color: var(--color-text-primary);
+      border-color: var(--color-border);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255,255,255,0.1);
+    }
+
+    .btn-usb {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .btn-usb.connected {
+      background: rgba(0, 168, 89, 0.2);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    /* CORPO PRINCIPAL DO EDITOR (3 COLUNAS) */
+    .editor-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 240px 1fr 340px;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* PAINEL ESQUERDO: FERRAMENTAS */
+    .sidebar-left {
+      background-color: var(--color-surface);
+      border-right: 1px solid var(--color-border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .tool-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tool-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background-color: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-primary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      text-align: left;
+    }
+
+    .tool-item:hover {
+      border-color: var(--color-primary);
+      background-color: var(--color-primary-light);
+      color: var(--color-primary);
+    }
+
+    .tool-item i {
+      font-size: 1.1rem;
+    }
+
+    /* ÁREA CENTRAL: CANVAS WORKSPACE */
+    .workspace-center {
+      background-color: #121215;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: auto;
+      padding: 40px;
+    }
+
+    .canvas-toolbar {
+      position: absolute;
+      top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(24, 24, 27, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      z-index: 10;
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+    }
+
+    .canvas-toolbar input[type="number"] {
+      width: 50px;
+      background: var(--color-bg-base);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    /* ETIQUETA CANVAS FÍSICA */
+    .label-wrapper {
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.1);
+      background-color: #ffffff;
+      border-radius: 4px;
+      transition: width 0.3s, height 0.3s;
+      user-select: none;
+    }
+
+    /* Linhas de guia verdes para alinhamento */
+    .guide-line-v {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+      background-color: rgba(0, 168, 89, 0.6);
+      pointer-events: none;
+      display: none;
+    }
+
+    .guide-line-h {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      background-color: rgba(0, 168, 89, 0.6);
+      pointer-events: none;
+      display: none;
+    }
+
+    /* ELEMENTOS DENTRO DO CANVAS */
+    .canvas-element {
+      position: absolute;
+      color: #000000;
+      font-family: Arial, sans-serif;
+      cursor: move;
+      border: 1px dashed transparent;
+      padding: 2px 4px;
+      white-space: nowrap;
+      line-height: 1;
+      transform-origin: top left;
+      user-select: none;
+    }
+
+    .canvas-element:hover {
+      border-color: rgba(0, 168, 89, 0.5);
+    }
+
+    .canvas-element.selected {
+      border: 1px solid var(--color-primary);
+      background-color: rgba(0, 168, 89, 0.08);
+    }
+
+    /* PAINEL DIREITO: INSPETOR & PREVIEW */
+    .sidebar-right {
+      background-color: var(--color-surface);
+      border-left: 1px solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      background-color: var(--color-bg-base);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+      background-color: var(--color-surface);
+    }
+
+    .tab-content {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* FORMULÁRIO DE PROPRIEDADES */
+    .prop-group {
+      margin-bottom: 16px;
+    }
+
+    .prop-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .prop-input, .prop-select {
+      width: 100%;
+      background-color: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      color: var(--color-text-primary);
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .prop-input:focus, .prop-select:focus {
+      border-color: var(--color-primary);
+    }
+
+    .prop-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* CODE EDITOR (ZPL) */
+    .zpl-code-box {
+      width: 100%;
+      height: 380px;
+      background-color: #0d0d0f;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      color: #34d399;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      padding: 12px;
+      resize: none;
+      outline: none;
+      white-space: pre;
+    }
+
+    /* LABELARY PREVIEW CONTAINER */
+    .preview-box {
+      width: 100%;
+      min-height: 200px;
+      background: #000;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .preview-box img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #333;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-primary);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.875rem;
+      z-index: 9999;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA SUPERIOR (HEADER) -->
+  <header class="editor-header">
+    <div class="brand-section">
+      <a href="index.html" class="btn-back" title="Voltar para Check-in QR Code">
+        <i class="ph ph-arrow-left"></i> Voltar
+      </a>
+      <div class="brand-title">
+        Cheguei <span class="badge-tag">Editor ZPL II</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-usb" id="btnConnectUSB">
+        <i class="ph ph-usb"></i> Conectar Elgin USB
+      </button>
+
+      <button class="btn btn-secondary" id="btnResetTemplate" title="Restaurar Modelo Padrão">
+        <i class="ph ph-arrow-counter-clockwise"></i> Resetar
+      </button>
+
+      <button class="btn btn-secondary" id="btnSaveJSON" title="Salvar Modelo JSON">
+        <i class="ph ph-download-simple"></i> JSON
+      </button>
+
+      <button class="btn btn-primary" id="btnPrintTest">
+        <i class="ph ph-printer"></i> Imprimir Teste
+      </button>
+    </div>
+  </header>
+
+  <!-- CORPO DO EDITOR (3 COLUNAS) -->
+  <div class="editor-body">
+
+    <!-- COLUNA ESQUERDA: FERRAMENTAS -->
+    <aside class="sidebar-left">
+      <div class="section-title">Adicionar Elementos</div>
+      <div class="tool-group">
+        <button class="tool-item" data-add="nome">
+          <i class="ph ph-user"></i> Nome do Participante
+        </button>
+        <button class="tool-item" data-add="cargo_empresa">
+          <i class="ph ph-briefcase"></i> Cargo - Empresa
+        </button>
+        <button class="tool-item" data-add="cidade">
+          <i class="ph ph-map-pin"></i> Cidade
+        </button>
+        <button class="tool-item" data-add="texto">
+          <i class="ph ph-text-t"></i> Texto Livre
+        </button>
+        <button class="tool-item" data-add="barcode">
+          <i class="ph ph-barcode"></i> Código de Barras (128)
+        </button>
+        <button class="tool-item" data-add="qrcode">
+          <i class="ph ph-qr-code"></i> QR Code ZPL
+        </button>
+        <button class="tool-item" data-add="linha">
+          <i class="ph ph-minus"></i> Linha Divisória
+        </button>
+      </div>
+
+      <div class="section-title" style="margin-top: 16px;">Modelos Rápidos</div>
+      <div class="tool-group">
+        <button class="tool-item" id="btnPresetDefault">
+          <i class="ph ph-identification-card"></i> Crachá Padrão (80x30mm)
+        </button>
+      </div>
+    </aside>
+
+    <!-- COLUNA CENTRAL: CANVAS -->
+    <main class="workspace-center">
+      <div class="canvas-toolbar">
+        <span>Dimensões:</span>
+        <input type="number" id="inputWidthMM" value="80" min="20" max="110"> mm (Largura)
+        ×
+        <input type="number" id="inputHeightMM" value="30" min="10" max="100"> mm (Altura)
+        <span style="margin-left: 10px; color: var(--color-primary); font-weight: 600;">203 DPI (Elgin L42)</span>
+      </div>
+
+      <!-- Placa da Etiqueta -->
+      <div class="label-wrapper" id="labelWrapper" style="width: 640px; height: 240px;">
+        <div class="guide-line-v" id="guideV"></div>
+        <div class="guide-line-h" id="guideH"></div>
+        <!-- Elementos serão injetados dinamicamente aqui -->
+      </div>
+    </main>
+
+    <!-- COLUNA DIREITA: INSPETOR E PREVIEW -->
+    <aside class="sidebar-right">
+      <div class="tabs-header">
+        <button class="tab-btn active" data-tab="tabProps">
+          <i class="ph ph-sliders"></i> Propriedades
+        </button>
+        <button class="tab-btn" data-tab="tabZPL">
+          <i class="ph ph-code"></i> ZPL Bruto
+        </button>
+        <button class="tab-btn" data-tab="tabPreview">
+          <i class="ph ph-eye"></i> Live Preview
+        </button>
+      </div>
+
+      <!-- ABA PROPRIEDADES -->
+      <div class="tab-content active" id="tabProps">
+        <div id="noSelectionMessage" style="color: var(--color-text-muted); font-size: 0.85rem; text-align: center; padding: 30px 10px;">
+          <i class="ph ph-cursor-click" style="font-size: 2rem; margin-bottom: 8px; display: block;"></i>
+          Clique em um elemento na etiqueta para editar suas propriedades.
+        </div>
+
+        <div id="selectionForm" style="display: none;">
+          <div class="prop-group">
+            <label class="prop-label">Conteúdo / Texto</label>
+            <input type="text" class="prop-input" id="propContent">
+          </div>
+
+          <div class="prop-group prop-row">
+            <div>
+              <label class="prop-label">Posição X (mm)</label>
+              <input type="number" step="0.5" class="prop-input" id="propX">
+            </div>
+            <div>
+              <label class="prop-label">Posição Y (mm)</label>
+              <input type="number" step="0.5" class="prop-input" id="propY">
+            </div>
+          </div>
+
+          <div class="prop-group prop-row">
+            <div>
+              <label class="prop-label">Tamanho Fonte (dots)</label>
+              <input type="number" class="prop-input" id="propFontSize" value="30">
+            </div>
+            <div>
+              <label class="prop-label">Alinhamento</label>
+              <select class="prop-select" id="propAlign">
+                <option value="C">Centralizado</option>
+                <option value="L">Esquerda</option>
+                <option value="R">Direita</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="prop-group">
+            <button class="btn btn-secondary" id="btnCenterH" style="width: 100%; margin-bottom: 8px;">
+              <i class="ph ph-align-center-horizontal"></i> Centralizar Horizontalmente
+            </button>
+            <button class="btn btn-secondary" id="btnDeleteElem" style="width: 100%; color: var(--color-danger); border-color: rgba(239, 68, 68, 0.3);">
+              <i class="ph ph-trash"></i> Excluir Elemento
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA ZPL BRUTO -->
+      <div class="tab-content" id="tabZPL">
+        <div class="prop-group" style="display: flex; justify-content: space-between; align-items: center;">
+          <label class="prop-label">Código ZPL II Compilado</label>
+          <button class="btn btn-secondary" id="btnCopyZPL" style="padding: 4px 8px; font-size: 0.75rem;">
+            <i class="ph ph-copy"></i> Copiar
+          </button>
+        </div>
+        <textarea class="zpl-code-box" id="zplOutput" readonly></textarea>
+      </div>
+
+      <!-- ABA LIVE PREVIEW (LABELARY) -->
+      <div class="tab-content" id="tabPreview">
+        <div class="prop-group">
+          <label class="prop-label">Renderização Labelary (203 DPI)</label>
+          <div class="preview-box" id="previewBox">
+            <span style="color: var(--color-text-muted); font-size: 0.8rem;">Carregando prévia...</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary" id="btnRefreshPreview" style="width: 100%;">
+          <i class="ph ph-arrows-clockwise"></i> Atualizar Prévia
+        </button>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">
+    <i class="ph ph-check-circle" id="toastIcon"></i>
+    <span id="toastMessage">Notificação</span>
+  </div>
+
+  <!-- LÓGICA DO EDITOR JS -->
+  <script>
+    // ESTADO INICIAL DA ETIQUETA (MODELO PADRÃO CHEGUEI - 80mm x 30mm = 640 x 240 dots)
+    let labelState = {
+      width_mm: 80,
+      height_mm: 30,
+      dpi: 203,
+      elements: [
+        { id: "el_1", type: "text", x_mm: 0, y_mm: 4.3, font_size: 52, align: "C", content: "${nome}" },
+        { id: "el_2", type: "text", x_mm: 0, y_mm: 13.1, font_size: 25, align: "C", content: "${cargo_empresa}" },
+        { id: "el_3", type: "text", x_mm: 0, y_mm: 19.0, font_size: 25, align: "C", content: "${cidade}" }
+      ]
+    };
+
+    let selectedElementId = null;
+    let usbDevice = null;
+    let outEndpoint = null;
+    let claimedInterface = null;
+
+    // Elementos DOM
+    const labelWrapper = document.getElementById('labelWrapper');
+    const inputWidthMM = document.getElementById('inputWidthMM');
+    const inputHeightMM = document.getElementById('inputHeightMM');
+    const noSelectionMessage = document.getElementById('noSelectionMessage');
+    const selectionForm = document.getElementById('selectionForm');
+    const propContent = document.getElementById('propContent');
+    const propX = document.getElementById('propX');
+    const propY = document.getElementById('propY');
+    const propFontSize = document.getElementById('propFontSize');
+    const propAlign = document.getElementById('propAlign');
+    const zplOutput = document.getElementById('zplOutput');
+    const previewBox = document.getElementById('previewBox');
+    const btnConnectUSB = document.getElementById('btnConnectUSB');
+
+    // 1. INICIALIZAÇÃO
+    function init() {
+      renderCanvas();
+      setupEventListeners();
+      updateZPLCode();
+    }
+
+    // Toast
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+      
+      toastMessage.textContent = message;
+      toastIcon.className = type === 'success' ? 'ph ph-check-circle' : 'ph ph-warning-circle';
+      toast.classList.add('show');
+      
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    // 2. RENDERIZADOR DO CANVAS
+    function renderCanvas() {
+      // Atualiza tamanho físico do wrapper na tela (8 pixels por mm)
+      const canvasWidthPX = labelState.width_mm * 8;
+      const canvasHeightPX = labelState.height_mm * 8;
+
+      labelWrapper.style.width = canvasWidthPX + 'px';
+      labelWrapper.style.height = canvasHeightPX + 'px';
+
+      // Limpa elementos antigos (preservando linhas de guia)
+      const guides = labelWrapper.querySelectorAll('.guide-line-v, .guide-line-h');
+      labelWrapper.innerHTML = '';
+      guides.forEach(g => labelWrapper.appendChild(g));
+
+      // Renderiza cada elemento do estado
+      labelState.elements.forEach(el => {
+        const div = document.createElement('div');
+        div.className = 'canvas-element' + (el.id === selectedElementId ? ' selected' : '');
+        div.dataset.id = el.id;
+
+        // Posições em pixels (8px por mm)
+        const leftPX = el.x_mm * 8;
+        const topPX = el.y_mm * 8;
+
+        div.style.left = leftPX + 'px';
+        div.style.top = topPX + 'px';
+        div.style.fontSize = (el.font_size * 0.8) + 'px';
+        div.style.fontWeight = 'bold';
+
+        // Alinhamento
+        if (el.align === 'C') {
+          div.style.width = '100%';
+          div.style.left = '0px';
+          div.style.textAlign = 'center';
+        } else if (el.align === 'R') {
+          div.style.width = '100%';
+          div.style.left = '0px';
+          div.style.textAlign = 'right';
+        } else {
+          div.style.width = 'auto';
+          div.style.textAlign = 'left';
+        }
+
+        // Texto do elemento (substitui variáveis dinâmicas para simulação visual)
+        div.textContent = getMockText(el.content);
+
+        // Click handler para seleção
+        div.addEventListener('mousedown', (e) => startDrag(e, el));
+        div.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectElement(el.id);
+        });
+
+        labelWrapper.appendChild(div);
+      });
+    }
+
+    // Texto mock para exibição visual
+    function getMockText(text) {
+      if (text === '${nome}') return 'HERMANI FONSECA';
+      if (text === '${cargo_empresa}') return 'DESENVOLVEDOR - POLIS GESTAO';
+      if (text === '${cidade}') return 'GOVERNADOR VALADARES';
+      return text;
+    }
+
+    // 3. SELEÇÃO E EDICÃO DE PROPRIEDADES
+    function selectElement(id) {
+      selectedElementId = id;
+      renderCanvas();
+
+      const el = labelState.elements.find(e => e.id === id);
+      if (!el) {
+        noSelectionMessage.style.display = 'block';
+        selectionForm.style.display = 'none';
+        return;
+      }
+
+      noSelectionMessage.style.display = 'none';
+      selectionForm.style.display = 'block';
+
+      propContent.value = el.content;
+      propX.value = el.x_mm;
+      propY.value = el.y_mm;
+      propFontSize.value = el.font_size;
+      propAlign.value = el.align || 'C';
+    }
+
+    // Deselecionar ao clicar no fundo
+    labelWrapper.addEventListener('click', (e) => {
+      if (e.target === labelWrapper) {
+        selectedElementId = null;
+        renderCanvas();
+        noSelectionMessage.style.display = 'block';
+        selectionForm.style.display = 'none';
+      }
+    });
+
+    // 4. DRAG AND DROP
+    function startDrag(e, el) {
+      e.preventDefault();
+      selectElement(el.id);
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const initialX_MM = el.x_mm;
+      const initialY_MM = el.y_mm;
+
+      function onMouseMove(moveEvent) {
+        const deltaX_PX = moveEvent.clientX - startX;
+        const deltaY_PX = moveEvent.clientY - startY;
+
+        // Converter pixels arrastados em milímetros (1mm = 8px)
+        let newX_MM = Math.round((initialX_MM + (deltaX_PX / 8)) * 2) / 2;
+        let newY_MM = Math.round((initialY_MM + (deltaY_PX / 8)) * 2) / 2;
+
+        if (newX_MM < 0) newX_MM = 0;
+        if (newY_MM < 0) newY_MM = 0;
+
+        el.x_mm = newX_MM;
+        el.y_mm = newY_MM;
+
+        propX.value = el.x_mm;
+        propY.value = el.y_mm;
+
+        renderCanvas();
+        updateZPLCode();
+      }
+
+      function onMouseUp() {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    // 5. EVENT LISTENERS DO INSPECTOR
+    function setupEventListeners() {
+      // Mudança nas dimensões da etiqueta
+      inputWidthMM.addEventListener('change', () => {
+        labelState.width_mm = parseFloat(inputWidthMM.value) || 80;
+        renderCanvas();
+        updateZPLCode();
+      });
+
+      inputHeightMM.addEventListener('change', () => {
+        labelState.height_mm = parseFloat(inputHeightMM.value) || 30;
+        renderCanvas();
+        updateZPLCode();
+      });
+
+      // Mudança nos campos do elemento selecionado
+      propContent.addEventListener('input', () => {
+        const el = getSelectedElement();
+        if (el) {
+          el.content = propContent.value;
+          renderCanvas();
+          updateZPLCode();
+        }
+      });
+
+      propX.addEventListener('change', () => {
+        const el = getSelectedElement();
+        if (el) {
+          el.x_mm = parseFloat(propX.value) || 0;
+          renderCanvas();
+          updateZPLCode();
+        }
+      });
+
+      propY.addEventListener('change', () => {
+        const el = getSelectedElement();
+        if (el) {
+          el.y_mm = parseFloat(propY.value) || 0;
+          renderCanvas();
+          updateZPLCode();
+        }
+      });
+
+      propFontSize.addEventListener('change', () => {
+        const el = getSelectedElement();
+        if (el) {
+          el.font_size = parseInt(propFontSize.value) || 30;
+          renderCanvas();
+          updateZPLCode();
+        }
+      });
+
+      propAlign.addEventListener('change', () => {
+        const el = getSelectedElement();
+        if (el) {
+          el.align = propAlign.value;
+          renderCanvas();
+          updateZPLCode();
+        }
+      });
+
+      // Centralizar Horizontalmente
+      document.getElementById('btnCenterH').addEventListener('click', () => {
+        const el = getSelectedElement();
+        if (el) {
+          el.align = 'C';
+          el.x_mm = 0;
+          propAlign.value = 'C';
+          propX.value = 0;
+          renderCanvas();
+          updateZPLCode();
+        }
+      });
+
+      // Excluir Elemento
+      document.getElementById('btnDeleteElem').addEventListener('click', () => {
+        if (selectedElementId) {
+          labelState.elements = labelState.elements.filter(e => e.id !== selectedElementId);
+          selectedElementId = null;
+          renderCanvas();
+          updateZPLCode();
+          noSelectionMessage.style.display = 'block';
+          selectionForm.style.display = 'none';
+        }
+      });
+
+      // Botões para Adicionar Elementos
+      document.querySelectorAll('[data-add]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.dataset.add;
+          addElement(type);
+        });
+      });
+
+      // Navegação por Abas
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+          btn.classList.add('active');
+          const target = document.getElementById(btn.dataset.tab);
+          if (target) target.classList.add('active');
+
+          if (btn.dataset.tab === 'tabPreview') {
+            updateLabelaryPreview();
+          }
+        });
+      });
+
+      // Copiar ZPL
+      document.getElementById('btnCopyZPL').addEventListener('click', () => {
+        navigator.clipboard.writeText(zplOutput.value);
+        showToast('Código ZPL copiado para a área de transferência!', 'success');
+      });
+
+      // Salvar JSON
+      document.getElementById('btnSaveJSON').addEventListener('click', () => {
+        const jsonStr = JSON.stringify(labelState, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'modelo_etiqueta_cheguei.json';
+        a.click();
+        showToast('Modelo JSON baixado com sucesso!', 'success');
+      });
+
+      // Resetar Modelo
+      document.getElementById('btnResetTemplate').addEventListener('click', () => {
+        labelState = {
+          width_mm: 80,
+          height_mm: 30,
+          dpi: 203,
+          elements: [
+            { id: "el_1", type: "text", x_mm: 0, y_mm: 4.3, font_size: 52, align: "C", content: "${nome}" },
+            { id: "el_2", type: "text", x_mm: 0, y_mm: 13.1, font_size: 25, align: "C", content: "${cargo_empresa}" },
+            { id: "el_3", type: "text", x_mm: 0, y_mm: 19.0, font_size: 25, align: "C", content: "${cidade}" }
+          ]
+        };
+        inputWidthMM.value = 80;
+        inputHeightMM.value = 30;
+        selectedElementId = null;
+        renderCanvas();
+        updateZPLCode();
+        showToast('Modelo restaurado para o padrão!', 'success');
+      });
+
+      // Conexão WebUSB
+      btnConnectUSB.addEventListener('click', handleUSBConnection);
+      document.getElementById('btnPrintTest').addEventListener('click', printTest);
+    }
+
+    function getSelectedElement() {
+      return labelState.elements.find(e => e.id === selectedElementId);
+    }
+
+    // Adiciona novo elemento ao Canvas
+    function addElement(type) {
+      const newId = 'el_' + Date.now();
+      let newElem = { id: newId, type: 'text', x_mm: 0, y_mm: 10, font_size: 30, align: 'C', content: 'NOVO TEXTO' };
+
+      if (type === 'nome') newElem.content = '${nome}';
+      else if (type === 'cargo_empresa') newElem.content = '${cargo_empresa}';
+      else if (type === 'cidade') newElem.content = '${cidade}';
+      else if (type === 'barcode') newElem.content = '1234567890';
+
+      labelState.elements.push(newElem);
+      selectElement(newId);
+      renderCanvas();
+      updateZPLCode();
+    }
+
+    // 6. COMPILADOR ZPL II
+    function generateZPL(mockData = true) {
+      const widthDots = Math.round(labelState.width_mm * 8);
+      const heightDots = Math.round(labelState.height_mm * 8);
+
+      let zpl = `^XA\n^PW${widthDots}\n^LL${heightDots}\n^LH0,0\n`;
+
+      labelState.elements.forEach(el => {
+        const xDots = Math.round(el.x_mm * 8);
+        const yDots = Math.round(el.y_mm * 8);
+        const content = mockData ? getMockText(el.content) : el.content;
+        const align = el.align || 'C';
+
+        zpl += `^CF0,${el.font_size}\n`;
+        zpl += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${content}^FS\n`;
+      });
+
+      zpl += `^XZ`;
+      return zpl;
+    }
+
+    function updateZPLCode() {
+      zplOutput.value = generateZPL(true);
+    }
+
+    // 7. PREVIEW VIA LABELARY API
+    async function updateLabelaryPreview() {
+      previewBox.innerHTML = '<span style="color: var(--color-text-muted); font-size: 0.8rem;">Carregando prévia...</span>';
+      
+      const widthInches = (labelState.width_mm / 25.4).toFixed(2);
+      const heightInches = (labelState.height_mm / 25.4).toFixed(2);
+      const zpl = generateZPL(true);
+
+      const url = `https://api.labelary.com/v1/printers/203dpi/labels/${widthInches}x${heightInches}/0/`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: zpl
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const imgUrl = URL.createObjectURL(blob);
+          previewBox.innerHTML = `<img src="${imgUrl}" alt="Labelary Preview">`;
+        } else {
+          previewBox.innerHTML = '<span style="color: var(--color-danger); font-size: 0.8rem;">Erro ao carregar prévia do Labelary.</span>';
+        }
+      } catch (err) {
+        previewBox.innerHTML = '<span style="color: var(--color-danger); font-size: 0.8rem;">Falha na conexão com a API do Labelary.</span>';
+      }
+    }
+
+    // 8. COMUNICAÇÃO WEBUSB (ELGIN L42 PRO)
+    async function handleUSBConnection() {
+      if (!navigator.usb) {
+        showToast('WebUSB não suportado no navegador.', 'error');
+        return;
+      }
+
+      try {
+        const device = await navigator.usb.requestDevice({ filters: [] });
+        await device.open();
+        if (device.configuration === null) await device.selectConfiguration(1);
+
+        let foundEndpoint = null;
+        let foundInterface = null;
+
+        for (const iface of device.configuration.interfaces) {
+          for (const alt of iface.alternates) {
+            for (const ep of alt.endpoints) {
+              if (ep.direction === 'out') {
+                foundEndpoint = ep.endpointNumber;
+                foundInterface = iface.interfaceNumber;
+              }
+            }
+          }
+        }
+
+        if (foundEndpoint !== null) {
+          await device.claimInterface(foundInterface);
+          usbDevice = device;
+          outEndpoint = foundEndpoint;
+          claimedInterface = foundInterface;
+
+          btnConnectUSB.classList.add('connected');
+          btnConnectUSB.innerHTML = '<i class="ph ph-check-circle"></i> Elgin USB Conectada';
+          showToast('✅ Impressora Elgin conectada via USB!', 'success');
+        }
+      } catch (err) {
+        showToast('Erro ao conectar impressora: ' + err.message, 'error');
+      }
+    }
+
+    // Imprimir teste
+    async function printTest() {
+      if (!usbDevice || outEndpoint === null) {
+        showToast('Conecte a impressora USB antes de imprimir.', 'error');
+        handleUSBConnection();
+        return;
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        const zpl = generateZPL(true);
+        const data = encoder.encode(zpl);
+        await usbDevice.transferOut(outEndpoint, data);
+        showToast('✅ Etiqueta enviada para a impressora!', 'success');
+      } catch (err) {
+        showToast('Erro ao imprimir: ' + err.message, 'error');
+      }
+    }
+
+    // Executa ao carregar
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

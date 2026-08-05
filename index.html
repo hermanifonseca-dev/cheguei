@@ -139,6 +139,45 @@
       pointer-events: none;
     }
 
+    /* Botão Flutuante do Editor de Etiquetas */
+    .editor-module {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      height: 60px;
+      padding: 0 24px;
+      background: rgba(24, 24, 27, 0.85);
+      border-radius: var(--radius-full);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      border: 2px solid rgba(0, 168, 89, 0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      z-index: 9999;
+      color: var(--color-text-primary);
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .editor-module:hover {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .editor-module i {
+      font-size: 1.4rem;
+    }
+
     .printer-module.connected i {
       color: var(--color-primary);
     }
@@ -425,6 +464,11 @@
     <i class="ph ph-usb" id="printer-icon"></i>
     <div class="status-dot" id="status-dot"></div>
   </button>
+
+  <!-- Botão Flutuante do Editor de Etiquetas -->
+  <a href="editor.html" class="editor-module" title="Abrir Editor de Etiquetas ZPL">
+    <i class="ph ph-sliders"></i> Editor de Etiquetas
+  </a>
 
   <!-- Notificações Toast -->
   <div class="toast-container" id="toast">

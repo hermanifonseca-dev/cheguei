@@ -13,6 +13,9 @@
   <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root {
       --color-primary: #00a859;
@@ -698,9 +701,19 @@
     const previewBox = document.getElementById('previewBox');
     const btnConnectUSB = document.getElementById('btnConnectUSB');
 
+    // Configuração do Supabase
+    const SUPABASE_URL = 'https://eqadpgfpicxfpyaitnrn.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_YV0sk8AJJhm9CTB7p4AkCw_y8JoeNxw';
+    let supabaseClient = null;
+    let currentEventoId = 1;
+
+    if (window.supabase) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
     // 1. INICIALIZAÇÃO
-    function init() {
-      // Carrega modelo salvo do localStorage, se existir
+    async function init() {
+      // 1. Tenta carregar do localStorage primeiro
       const savedLayout = localStorage.getItem('cheguei_label_template');
       if (savedLayout) {
         try {
@@ -709,10 +722,34 @@
             labelState = parsed;
             inputWidthMM.value = labelState.width_mm || 80;
             inputHeightMM.value = labelState.height_mm || 30;
-            console.log('Modelo carregado do localStorage com sucesso.');
           }
         } catch (e) {
           console.error('Erro ao ler modelo do localStorage:', e);
+        }
+      }
+
+      // 2. Busca o modelo mais recente do evento ativo no Supabase
+      if (supabaseClient) {
+        try {
+          const { data: evento, error } = await supabaseClient
+            .from('eventos')
+            .select('id, nome, modelo_etiqueta')
+            .eq('status', 'ativo')
+            .limit(1)
+            .maybeSingle();
+
+          if (evento) {
+            currentEventoId = evento.id;
+            if (evento.modelo_etiqueta && Array.isArray(evento.modelo_etiqueta.elements)) {
+              labelState = evento.modelo_etiqueta;
+              inputWidthMM.value = labelState.width_mm || 80;
+              inputHeightMM.value = labelState.height_mm || 30;
+              localStorage.setItem('cheguei_label_template', JSON.stringify(labelState));
+              console.log('✅ Modelo do evento (' + evento.nome + ') carregado do Supabase.');
+            }
+          }
+        } catch (err) {
+          console.log('Busca no Supabase continuou com fallback local:', err);
         }
       }
 
@@ -987,10 +1024,32 @@
         showToast('Código ZPL copiado para a área de transferência!', 'success');
       });
 
-      // Salvar Modelo no LocalStorage (Navegador)
-      document.getElementById('btnSaveLayout').addEventListener('click', () => {
+      // Salvar Modelo no LocalStorage e no Supabase (Vinculado ao Evento Ativo)
+      document.getElementById('btnSaveLayout').addEventListener('click', async () => {
         localStorage.setItem('cheguei_label_template', JSON.stringify(labelState));
-        showToast('✅ Layout da etiqueta salvo com sucesso!', 'success');
+        
+        if (supabaseClient) {
+          try {
+            showToast('Salvando modelo no evento...', 'success');
+            const { error } = await supabaseClient
+              .from('eventos')
+              .update({ modelo_etiqueta: labelState })
+              .eq('id', currentEventoId || 1);
+
+            if (error) {
+              console.warn('Salvo localmente! (Aviso no Supabase):', error);
+              showToast('✅ Layout salvo no navegador!', 'success');
+            } else {
+              console.log('✅ Modelo gravado no Supabase para o evento ID:', currentEventoId);
+              showToast('✅ Layout salvo no Supabase e sincronizado com o evento!', 'success');
+            }
+          } catch (err) {
+            console.error('Exceção ao salvar no Supabase:', err);
+            showToast('✅ Layout salvo no navegador!', 'success');
+          }
+        } else {
+          showToast('✅ Layout salvo no navegador!', 'success');
+        }
       });
 
       // Baixar Modelo JSON

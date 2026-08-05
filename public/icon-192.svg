@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#09090b"/>
-  <rect x="16" y="16" width="160" height="160" rx="32" fill="#00a859" opacity="0.15"/>
-  <rect x="24" y="24" width="144" height="144" rx="24" fill="#09090b" stroke="#00a859" stroke-width="4"/>
-  <!-- Ícone QR Code / Check-in -->
-  <path d="M56 56h32v32H56zM104 56h32v32h-32zM56 104h32v32H56z" fill="#00a859"/>
-  <circle cx="120" cy="120" r="16" fill="#00a859"/>
-  <path d="M114 120l4 4 8-8" stroke="#09090b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-</svg>

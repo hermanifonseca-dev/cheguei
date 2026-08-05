@@ -847,33 +847,48 @@
         div.className = 'canvas-element' + (el.id === selectedElementId ? ' selected' : '');
         div.dataset.id = el.id;
 
-        // Posições em pixels (8px por mm)
-        const leftPX = el.x_mm * 8;
-        const topPX = el.y_mm * 8;
+        if (el.type === 'line') {
+          const leftPX = (el.x_mm || 0) * 8;
+          const topPX = (el.y_mm || 0) * 8;
+          const widthPX = (el.width_mm || labelState.width_mm) * 8;
+          const thicknessPX = Math.max(1, el.thickness || 3);
 
-        div.style.left = leftPX + 'px';
-        div.style.top = topPX + 'px';
-        div.style.fontSize = (el.font_size * 0.8) + 'px';
-        div.style.fontWeight = 'bold';
-
-        // Alinhamento
-        if (el.align === 'C') {
-          div.style.width = '100%';
-          div.style.left = '0px';
-          div.style.textAlign = 'center';
-        } else if (el.align === 'R') {
-          div.style.width = '100%';
-          div.style.left = '0px';
-          div.style.textAlign = 'right';
+          div.style.left = leftPX + 'px';
+          div.style.top = topPX + 'px';
+          div.style.width = widthPX + 'px';
+          div.style.height = thicknessPX + 'px';
+          div.style.backgroundColor = '#000000';
+          div.style.padding = '0';
+          div.textContent = '';
         } else {
-          div.style.width = 'auto';
-          div.style.textAlign = 'left';
+          // Posições em pixels (8px por mm)
+          const leftPX = el.x_mm * 8;
+          const topPX = el.y_mm * 8;
+
+          div.style.left = leftPX + 'px';
+          div.style.top = topPX + 'px';
+          div.style.fontSize = ((el.font_size || 30) * 0.8) + 'px';
+          div.style.fontWeight = 'bold';
+
+          // Alinhamento
+          if (el.align === 'C') {
+            div.style.width = '100%';
+            div.style.left = '0px';
+            div.style.textAlign = 'center';
+          } else if (el.align === 'R') {
+            div.style.width = '100%';
+            div.style.left = '0px';
+            div.style.textAlign = 'right';
+          } else {
+            div.style.width = 'auto';
+            div.style.textAlign = 'left';
+          }
+
+          // Texto do elemento
+          div.textContent = getMockText(el.content);
         }
 
-        // Texto do elemento (substitui variáveis dinâmicas para simulação visual)
-        div.textContent = getMockText(el.content);
-
-        // Click handler para seleção
+        // Click handler para seleção e drag
         div.addEventListener('mousedown', (e) => startDrag(e, el));
         div.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -1195,6 +1210,18 @@
       else if (type === 'cargo_empresa') newElem.content = '${cargo_empresa}';
       else if (type === 'cidade') newElem.content = '${cidade}';
       else if (type === 'barcode') newElem.content = '1234567890';
+      else if (type === 'linha') {
+        newElem = {
+          id: newId,
+          type: 'line',
+          x_mm: 5,
+          y_mm: 12,
+          width_mm: labelState.width_mm - 10,
+          thickness: 3,
+          align: 'C',
+          content: ''
+        };
+      }
 
       labelState.elements.push(newElem);
       selectElement(newId);
@@ -1210,13 +1237,20 @@
       let zpl = `^XA\n^PW${widthDots}\n^LL${heightDots}\n^LH0,0\n`;
 
       labelState.elements.forEach(el => {
-        const xDots = Math.round(el.x_mm * 8);
-        const yDots = Math.round(el.y_mm * 8);
-        const content = mockData ? getMockText(el.content) : el.content;
-        const align = el.align || 'C';
+        const xDots = Math.round((el.x_mm || 0) * 8);
+        const yDots = Math.round((el.y_mm || 0) * 8);
 
-        zpl += `^CF0,${el.font_size}\n`;
-        zpl += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${content}^FS\n`;
+        if (el.type === 'line') {
+          const lineWidthDots = Math.round((el.width_mm || labelState.width_mm) * 8);
+          const thickness = el.thickness || 3;
+          zpl += `^FO${xDots},${yDots}^GB${lineWidthDots},0,${thickness},B,0^FS\n`;
+        } else {
+          const content = mockData ? getMockText(el.content) : el.content;
+          const align = el.align || 'C';
+
+          zpl += `^CF0,${el.font_size || 30}\n`;
+          zpl += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${content}^FS\n`;
+        }
       });
 
       zpl += `^XZ`;

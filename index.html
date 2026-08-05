@@ -739,15 +739,21 @@
         activeState.elements.forEach(el => {
           const xDots = Math.round((el.x_mm || 0) * 8);
           const yDots = Math.round((el.y_mm || 0) * 8);
-          const align = el.align || 'C';
-          
-          let val = el.content || '';
-          if (val === '${nome}') val = nomeFormatado;
-          else if (val === '${cargo_empresa}') val = cargoEmpresa;
-          else if (val === '${cidade}') val = cidade;
 
-          zplCommand += `^CF0,${el.font_size || 30}\n`;
-          zplCommand += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${val}^FS\n`;
+          if (el.type === 'line') {
+            const lineWidthDots = Math.round((el.width_mm || activeState.width_mm) * 8);
+            const thickness = el.thickness || 3;
+            zplCommand += `^FO${xDots},${yDots}^GB${lineWidthDots},0,${thickness},B,0^FS\n`;
+          } else {
+            const align = el.align || 'C';
+            let val = el.content || '';
+            if (val === '${nome}') val = nomeFormatado;
+            else if (val === '${cargo_empresa}') val = cargoEmpresa;
+            else if (val === '${cidade}') val = cidade;
+
+            zplCommand += `^CF0,${el.font_size || 30}\n`;
+            zplCommand += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${val}^FS\n`;
+          }
         });
 
         zplCommand += `^XZ`;

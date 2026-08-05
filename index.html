@@ -518,44 +518,84 @@
       }
     }
 
-    // Função para configurar e abrir o dispositivo USB
-    async function setupUsbDevice(device) {
+    // Função principal: Conectar ou Imprimir
+    async function handlePrinterConnection() {
+      if (!navigator.usb) {
+        showToast('WebUSB não suportado. Use Chrome/Edge via HTTPS ou Localhost.', 'error');
+        return;
+      }
+
+      // Se já conectado, imprime teste
+      if (usbDevice && outEndpoint !== null) {
+        printTestLabel();
+        return;
+      }
+
       try {
-        console.log('Inicializando dispositivo USB:', device.productName, 
+        showToast('Abrindo seletor de dispositivos USB...', 'success');
+
+        // Solicitar dispositivo USB (sem filtro para listar todos)
+        const device = await navigator.usb.requestDevice({ filters: [] });
+        
+        console.log('Dispositivo selecionado:', device.productName, 
                      'VID:', '0x' + device.vendorId.toString(16), 
                      'PID:', '0x' + device.productId.toString(16));
+        
+        showToast('Conectando a ' + (device.productName || 'Impressora') + '...', 'success');
 
         await device.open();
         console.log('Dispositivo aberto com sucesso.');
 
+        // Selecionar configuração (se não houver uma ativa)
         if (device.configuration === null) {
           await device.selectConfiguration(1);
           console.log('Configuração 1 selecionada.');
         }
 
+        // Varrer TODAS as interfaces para encontrar um endpoint OUT (Bulk Transfer)
         let foundEndpoint = null;
         let foundInterfaceNum = null;
 
         const config = device.configuration;
+        console.log('Configuração:', config.configurationValue, 
+                     '- Interfaces:', config.interfaces.length);
 
         for (const iface of config.interfaces) {
+          console.log('Interface', iface.interfaceNumber, 
+                       '- Alternates:', iface.alternates.length);
+          
           for (const alt of iface.alternates) {
+            console.log('  Alternate', alt.alternateSetting, 
+                         '- Class:', alt.interfaceClass,
+                         '- Subclass:', alt.interfaceSubclass,
+                         '- Endpoints:', alt.endpoints.length);
+            
             for (const ep of alt.endpoints) {
+              console.log('    Endpoint', ep.endpointNumber, 
+                           '- Direction:', ep.direction, 
+                           '- Type:', ep.type);
+              
+              // Procura o primeiro endpoint Bulk OUT
               if (ep.direction === 'out' && ep.type === 'bulk') {
                 foundEndpoint = ep.endpointNumber;
                 foundInterfaceNum = iface.interfaceNumber;
+                console.log('>>> ENCONTRADO Endpoint OUT:', foundEndpoint, 
+                             'na Interface:', foundInterfaceNum);
               }
             }
           }
         }
 
         if (foundEndpoint === null) {
+          // Fallback: tentar qualquer endpoint OUT (não apenas bulk)
           for (const iface of config.interfaces) {
             for (const alt of iface.alternates) {
               for (const ep of alt.endpoints) {
                 if (ep.direction === 'out') {
                   foundEndpoint = ep.endpointNumber;
                   foundInterfaceNum = iface.interfaceNumber;
+                  console.log('>>> FALLBACK Endpoint OUT:', foundEndpoint, 
+                               'na Interface:', foundInterfaceNum);
                 }
               }
             }
@@ -563,9 +603,10 @@
         }
 
         if (foundEndpoint === null || foundInterfaceNum === null) {
-          throw new Error('Nenhum endpoint de saída encontrado no dispositivo USB.');
+          throw new Error('Nenhum endpoint de saída encontrado. Verifique se a impressora está ligada e conectada via USB.');
         }
 
+        // Reivindicar a interface encontrada
         await device.claimInterface(foundInterfaceNum);
         console.log('Interface', foundInterfaceNum, 'reivindicada com sucesso.');
 
@@ -574,6 +615,17 @@
         claimedInterface = foundInterfaceNum;
 
         updatePrinterStatus(true);
+        showToast('✅ ' + (device.productName || 'Elgin L42') + ' conectada! Toque para imprimir teste.', 'success');
+
+      } catch (error) {
+        console.error('Erro na conexão USB:', error);
+        
+        if (error.name === 'NotFoundError') {
+          showToast('Seleção cancelada. Toque novamente para tentar.', 'error');
+        } else if (error.name === 'SecurityError') {
+          showToast('Acesso negado. Acesse via HTTPS ou Localhost.', 'error');
+        } else if (error.name === 'NetworkError') {
+          showToast('Erro de rede USB. Desconecte e reconecte a impressora.', 'error');
         } else if (error.message && error.message.includes('claimed')) {
           showToast('Interface USB ocupada. Feche outros apps usando a impressora.', 'error');
         } else {
@@ -845,11 +897,6 @@
 
     // Escuta eventos globais de conexão/desconexão USB do navegador
     if (navigator.usb) {
-      navigator.usb.addEventListener('connect', event => {
-        console.log('Dispositivo USB plugado:', event.device.productName);
-        setupUsbDevice(event.device);
-      });
-
       navigator.usb.addEventListener('disconnect', event => {
         if (usbDevice && event.device === usbDevice) {
           usbDevice = null;
@@ -859,33 +906,8 @@
           showToast('Impressora desconectada.', 'error');
         }
       });
-
-      // Tenta reconectar automaticamente a impressoras anteriormente autorizadas
-      async function tryAutoConnectUSB() {
-        try {
-          const devices = await navigator.usb.getDevices();
-          if (devices.length > 0) {
-            console.log('Tentando reconectar impressora salva:', devices[0].productName);
-            await setupUsbDevice(devices[0]);
-          }
-        } catch (e) {
-          console.warn('Tentativa de auto-reconexão USB silenciosa:', e);
-        }
-      }
-
-      window.addEventListener('DOMContentLoaded', tryAutoConnectUSB);
     }
 
-    // Desregistra automaticamente qualquer Service Worker PWA ativo no navegador para liberar a WebUSB
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        for (let registration of registrations) {
-          registration.unregister().then(() => {
-            console.log('✅ Service Worker PWA removido com sucesso para liberar a WebUSB.');
-          });
-        }
-      });
-    }
   </script>
 </body>
 </html>

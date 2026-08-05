@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cheguei - Dashboard de Eventos</title>
+  <meta name="description" content="Dashboard analítico de eventos com métricas de check-in, presença e impressão de crachás em tempo real.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════ */
+    :root {
+      --color-primary: #00a859;
+      --color-primary-hover: #008f4c;
+      --color-primary-glow: rgba(0, 168, 89, 0.25);
+      --color-primary-light: rgba(0, 168, 89, 0.12);
+
+      --color-bg: #09090b;
+      --color-surface: #18181b;
+      --color-surface-elevated: #27272a;
+      --color-border: #3f3f46;
+
+      --color-text: #fafafa;
+      --color-text-secondary: #a1a1aa;
+      --color-text-muted: #71717a;
+
+      --color-success: #22c55e;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      --color-info: #3b82f6;
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body, html {
+      width: 100%; height: 100%;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════ */
+    .dash-header {
+      height: 64px;
+      background: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+      position: sticky; top: 0; z-index: 50;
+    }
+
+    .brand-row {
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .brand-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.2rem; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .badge {
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      font-size: 0.72rem; padding: 3px 10px;
+      border-radius: var(--radius-full);
+      font-weight: 600;
+    }
+
+    .nav-links { display: flex; gap: 10px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: var(--radius-sm);
+      font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; border: 1px solid transparent;
+      text-decoration: none; transition: var(--transition);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-ghost {
+      background: transparent; color: var(--color-text-secondary);
+      border-color: var(--color-border);
+    }
+    .btn-ghost:hover { background: var(--color-surface-elevated); color: var(--color-text); }
+
+    .btn-primary {
+      background: var(--color-primary); color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--color-primary-hover);
+      box-shadow: 0 0 20px var(--color-primary-glow);
+    }
+
+    /* ═══════════════════════════════════════════
+       MAIN CONTAINER
+    ═══════════════════════════════════════════ */
+    .dash-main {
+      max-width: 1280px; margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+
+    /* Título + seletor */
+    .top-row {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
+    }
+
+    .page-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem; font-weight: 700;
+    }
+
+    .page-sub {
+      color: var(--color-text-secondary); font-size: 0.85rem; margin-top: 4px;
+    }
+
+    .event-selector {
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .event-selector label {
+      font-size: 0.8rem; font-weight: 600; color: var(--color-text-secondary);
+    }
+
+    .select-event {
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      padding: 9px 14px; border-radius: var(--radius-sm);
+      font-size: 0.88rem; font-weight: 600;
+      outline: none; cursor: pointer;
+      min-width: 260px;
+      transition: var(--transition);
+    }
+    .select-event:focus { border-color: var(--color-primary); }
+
+    /* ═══════════════════════════════════════════
+       KPI CARDS
+    ═══════════════════════════════════════════ */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
+    .kpi-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 22px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+
+    .kpi-card:hover {
+      border-color: rgba(255,255,255,0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+    }
+
+    .kpi-card::after {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 3px;
+      background: var(--kpi-accent, var(--color-primary));
+    }
+
+    .kpi-label {
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .kpi-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.2rem; font-weight: 700;
+      line-height: 1;
+      color: var(--color-text);
+    }
+
+    .kpi-sub {
+      font-size: 0.78rem; color: var(--color-text-muted);
+      margin-top: 6px;
+    }
+
+    /* ═══════════════════════════════════════════
+       CHART + TABLE LAYOUT
+    ═══════════════════════════════════════════ */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .content-grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem; font-weight: 700;
+    }
+
+    .card-body { padding: 20px; }
+
+    /* Donut Chart */
+    .chart-wrapper {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 28px 20px;
+    }
+
+    #donutChart {
+      width: 220px; height: 220px;
+    }
+
+    .chart-legend {
+      display: flex; flex-direction: column; gap: 10px;
+      margin-top: 20px; width: 100%;
+    }
+
+    .legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; color: var(--color-text-secondary);
+    }
+
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+
+    .legend-value {
+      margin-left: auto; font-weight: 700;
+      color: var(--color-text); font-family: 'Space Grotesk', sans-serif;
+    }
+
+    /* ═══════════════════════════════════════════
+       TABELA DE PARTICIPANTES
+    ═══════════════════════════════════════════ */
+    .search-bar {
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .search-input {
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      padding: 7px 12px; border-radius: var(--radius-sm);
+      font-size: 0.82rem; outline: none;
+      width: 200px;
+      transition: var(--transition);
+    }
+    .search-input:focus { border-color: var(--color-primary); width: 260px; }
+
+    .table-scroll {
+      max-height: 440px; overflow-y: auto;
+    }
+
+    .table-scroll::-webkit-scrollbar { width: 6px; }
+    .table-scroll::-webkit-scrollbar-track { background: transparent; }
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: var(--color-border); border-radius: 3px;
+    }
+
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.84rem; text-align: left;
+    }
+
+    thead { position: sticky; top: 0; z-index: 2; }
+
+    th {
+      background: var(--color-surface-elevated);
+      color: var(--color-text-secondary);
+      font-weight: 600; padding: 12px 16px;
+      text-transform: uppercase; font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: var(--radius-full);
+      font-size: 0.72rem; font-weight: 600;
+    }
+
+    .status-yes {
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--color-success);
+    }
+
+    .status-no {
+      background: rgba(161,161,170,0.12);
+      color: var(--color-text-muted);
+    }
+
+    /* Pulse de atualização */
+    .refresh-dot {
+      width: 8px; height: 8px;
+      background: var(--color-success);
+      border-radius: var(--radius-full);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Estado vazio */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--color-text-muted);
+    }
+
+    .empty-state i { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-primary);
+      color: #fff; padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.85rem; z-index: 9999;
+      transform: translateY(100px); opacity: 0;
+      transition: var(--transition);
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* Evento info bar */
+    .event-info-bar {
+      background: var(--color-primary-light);
+      border: 1px solid rgba(0, 168, 89, 0.2);
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      margin-bottom: 22px;
+      display: flex; align-items: center; gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .event-info-bar .info-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.82rem; color: var(--color-text-secondary);
+    }
+
+    .event-info-bar .info-item strong {
+      color: var(--color-text); font-weight: 600;
+    }
+
+    .info-divider {
+      width: 1px; height: 20px;
+      background: var(--color-border);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═════════════════════ HEADER ═════════════════════ -->
+  <header class="dash-header">
+    <div class="brand-row">
+      <a href="admin.html" class="btn btn-ghost" title="Voltar ao Painel Admin">
+        <i class="ph ph-arrow-left"></i> Admin
+      </a>
+      <div class="brand-name">
+        Cheguei <span class="badge">Dashboard</span>
+      </div>
+    </div>
+    <div class="nav-links">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="refresh-dot" id="refreshDot" title="Atualização automática ativa"></div>
+        <span style="font-size:0.75rem;color:var(--color-text-muted);" id="lastUpdate">Atualizando...</span>
+      </div>
+      <a href="editor.html" class="btn btn-ghost"><i class="ph ph-sliders"></i> Editor</a>
+      <a href="index.html" class="btn btn-ghost"><i class="ph ph-qr-code"></i> Check-in</a>
+    </div>
+  </header>
+
+  <!-- ═════════════════════ MAIN ═════════════════════ -->
+  <main class="dash-main">
+
+    <!-- Título + Seletor -->
+    <div class="top-row">
+      <div>
+        <h1 class="page-title">Dashboard de Eventos</h1>
+        <p class="page-sub">Métricas de check-in, presença e impressão de crachás em tempo real.</p>
+      </div>
+      <div class="event-selector">
+        <label for="selectEvento"><i class="ph ph-calendar" style="color:var(--color-primary);font-size:1.1rem;"></i></label>
+        <select class="select-event" id="selectEvento">
+          <option value="">Carregando eventos...</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Barra de Informações do Evento -->
+    <div class="event-info-bar" id="eventInfoBar" style="display:none;">
+      <div class="info-item"><i class="ph ph-calendar-blank" style="color:var(--color-primary);"></i> <strong id="infoData">—</strong></div>
+      <div class="info-divider"></div>
+      <div class="info-item"><i class="ph ph-clock" style="color:var(--color-primary);"></i> <strong id="infoHorario">—</strong></div>
+      <div class="info-divider"></div>
+      <div class="info-item"><i class="ph ph-map-pin" style="color:var(--color-primary);"></i> <strong id="infoLocal">—</strong></div>
+      <div class="info-divider"></div>
+      <div class="info-item"><i class="ph ph-users" style="color:var(--color-primary);"></i> Vagas: <strong id="infoVagas">—</strong></div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--kpi-accent: var(--color-info);">
+        <div class="kpi-label"><i class="ph ph-users"></i> Total de Inscritos</div>
+        <div class="kpi-value" id="kpiTotal">—</div>
+        <div class="kpi-sub" id="kpiTotalSub">Carregando...</div>
+      </div>
+      <div class="kpi-card" style="--kpi-accent: var(--color-success);">
+        <div class="kpi-label"><i class="ph ph-check-circle"></i> Check-ins Realizados</div>
+        <div class="kpi-value" id="kpiCheckins">—</div>
+        <div class="kpi-sub" id="kpiCheckinsSub">Carregando...</div>
+      </div>
+      <div class="kpi-card" style="--kpi-accent: var(--color-warning);">
+        <div class="kpi-label"><i class="ph ph-printer"></i> Etiquetas Impressas</div>
+        <div class="kpi-value" id="kpiImpressos">—</div>
+        <div class="kpi-sub" id="kpiImpressosSub">Carregando...</div>
+      </div>
+      <div class="kpi-card" style="--kpi-accent: var(--color-primary);">
+        <div class="kpi-label"><i class="ph ph-chart-pie-slice"></i> Taxa de Presença</div>
+        <div class="kpi-value" id="kpiTaxa">—</div>
+        <div class="kpi-sub" id="kpiTaxaSub">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- Gráfico + Tabela -->
+    <div class="content-grid">
+
+      <!-- Gráfico de Rosca -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i class="ph ph-chart-donut" style="color:var(--color-primary);"></i> Presença</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="donutChart" width="220" height="220"></canvas>
+          <div class="chart-legend" id="chartLegend"></div>
+        </div>
+      </div>
+
+      <!-- Tabela de Participantes -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title"><i class="ph ph-list-checks" style="color:var(--color-primary);"></i> Participantes</span>
+          <div class="search-bar">
+            <i class="ph ph-magnifying-glass" style="color:var(--color-text-muted);"></i>
+            <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nome...">
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Cargo / Empresa</th>
+                <th>Cidade</th>
+                <th style="text-align:center;">Check-in</th>
+                <th style="text-align:center;">Impresso</th>
+              </tr>
+            </thead>
+            <tbody id="participantsBody">
+              <tr>
+                <td colspan="5" class="empty-state">
+                  <i class="ph ph-circle-notch" style="animation:spin 1s linear infinite;"></i>
+                  Carregando participantes...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <i class="ph ph-check-circle" id="toastIcon"></i>
+    <span id="toastMessage"></span>
+  </div>
+
+  <!-- ═════════════════════ SCRIPT ═════════════════════ -->
+  <script>
+    // ─────────────── Supabase ───────────────
+    const SUPABASE_URL = 'https://eqadpgfpicxfpyaitnrn.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_YV0sk8AJJhm9CTB7p4AkCw_y8JoeNxw';
+    let sb = null;
+    if (window.supabase) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    // ─────────────── Estado ───────────────
+    let eventos = [];
+    let inscricoes = [];
+    let selectedEventId = null;
+    let refreshInterval = null;
+
+    // ─────────────── DOM ───────────────
+    const selectEvento   = document.getElementById('selectEvento');
+    const eventInfoBar   = document.getElementById('eventInfoBar');
+    const kpiTotal       = document.getElementById('kpiTotal');
+    const kpiTotalSub    = document.getElementById('kpiTotalSub');
+    const kpiCheckins    = document.getElementById('kpiCheckins');
+    const kpiCheckinsSub = document.getElementById('kpiCheckinsSub');
+    const kpiImpressos   = document.getElementById('kpiImpressos');
+    const kpiImpressosSub= document.getElementById('kpiImpressosSub');
+    const kpiTaxa        = document.getElementById('kpiTaxa');
+    const kpiTaxaSub     = document.getElementById('kpiTaxaSub');
+    const participantsBody = document.getElementById('participantsBody');
+    const searchInput    = document.getElementById('searchInput');
+    const lastUpdate     = document.getElementById('lastUpdate');
+
+    // ─────────────── Init ───────────────
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadEventos();
+      startAutoRefresh();
+
+      selectEvento.addEventListener('change', () => {
+        selectedEventId = parseInt(selectEvento.value);
+        loadDashboard();
+      });
+
+      searchInput.addEventListener('input', renderTable);
+    });
+
+    // ─────────────── 1. Carregar Eventos ───────────────
+    async function loadEventos() {
+      if (!sb) return;
+      const { data, error } = await sb
+        .from('eventos')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (error) { console.error('Erro ao buscar eventos:', error); return; }
+      eventos = data || [];
+
+      selectEvento.innerHTML = '';
+      if (eventos.length === 0) {
+        selectEvento.innerHTML = '<option value="">Nenhum evento cadastrado</option>';
+        return;
+      }
+
+      eventos.forEach(ev => {
+        const opt = document.createElement('option');
+        opt.value = ev.id;
+        opt.textContent = `${ev.status === 'ativo' ? '🟢 ' : ''}${ev.nome}`;
+        selectEvento.appendChild(opt);
+      });
+
+      // Seleciona o evento ativo por padrão, ou o primeiro
+      const ativo = eventos.find(e => e.status === 'ativo');
+      selectedEventId = ativo ? ativo.id : eventos[0].id;
+      selectEvento.value = selectedEventId;
+
+      await loadDashboard();
+    }
+
+    // ─────────────── 2. Carregar Dashboard ───────────────
+    async function loadDashboard() {
+      if (!sb || !selectedEventId) return;
+
+      // Info do evento
+      const ev = eventos.find(e => e.id === selectedEventId);
+      if (ev) {
+        eventInfoBar.style.display = 'flex';
+        document.getElementById('infoData').textContent = ev.data_evento
+          ? new Date(ev.data_evento + 'T00:00:00').toLocaleDateString('pt-BR')
+          : '—';
+        document.getElementById('infoHorario').textContent = ev.horario || '—';
+        document.getElementById('infoLocal').textContent = ev.local || '—';
+        document.getElementById('infoVagas').textContent = ev.vagas_totais || '—';
+      }
+
+      // Inscrições do evento
+      const { data, error } = await sb
+        .from('inscricoes')
+        .select('*')
+        .eq('evento_id', selectedEventId)
+        .order('nome', { ascending: true });
+
+      if (error) { console.error('Erro ao buscar inscrições:', error); return; }
+      inscricoes = data || [];
+
+      updateKPIs();
+      drawDonut();
+      renderTable();
+
+      lastUpdate.textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}`;
+    }
+
+    // ─────────────── 3. KPIs ───────────────
+    function updateKPIs() {
+      const total = inscricoes.length;
+      const confirmados = inscricoes.filter(i => i.confirmado).length;
+      const impressos = inscricoes.filter(i => i.impresso).length;
+      const taxa = total > 0 ? ((confirmados / total) * 100) : 0;
+
+      const ev = eventos.find(e => e.id === selectedEventId);
+      const vagas = ev ? (ev.vagas_totais || total) : total;
+
+      animateNumber(kpiTotal, total);
+      kpiTotalSub.textContent = `de ${vagas} vagas`;
+
+      animateNumber(kpiCheckins, confirmados);
+      kpiCheckinsSub.textContent = `${total - confirmados} aguardando`;
+
+      animateNumber(kpiImpressos, impressos);
+      kpiImpressosSub.textContent = `${confirmados - impressos >= 0 ? confirmados - impressos : 0} na fila`;
+
+      kpiTaxa.textContent = taxa.toFixed(1) + '%';
+      kpiTaxaSub.textContent = `${confirmados} de ${total} inscritos`;
+    }
+
+    function animateNumber(el, target) {
+      const current = parseInt(el.textContent) || 0;
+      if (current === target) { el.textContent = target; return; }
+      const step = target > current ? 1 : -1;
+      const diff = Math.abs(target - current);
+      const interval = Math.max(8, Math.floor(300 / diff));
+      let val = current;
+      const timer = setInterval(() => {
+        val += step;
+        el.textContent = val;
+        if (val === target) clearInterval(timer);
+      }, interval);
+    }
+
+    // ─────────────── 4. Gráfico de Rosca (Canvas) ───────────────
+    function drawDonut() {
+      const canvas = document.getElementById('donutChart');
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = 220 * dpr;
+      canvas.height = 220 * dpr;
+      ctx.scale(dpr, dpr);
+
+      const total = inscricoes.length;
+      const confirmados = inscricoes.filter(i => i.confirmado).length;
+      const impressos = inscricoes.filter(i => i.impresso).length;
+      const naoConfirmados = total - confirmados;
+
+      const segments = [
+        { label: 'Impressos',        value: impressos,            color: '#22c55e' },
+        { label: 'Confirmados (sem impressão)', value: confirmados - impressos, color: '#f59e0b' },
+        { label: 'Não confirmados',  value: naoConfirmados,       color: '#3f3f46' },
+      ].filter(s => s.value > 0);
+
+      const cx = 110, cy = 110, outerR = 95, innerR = 58;
+
+      ctx.clearRect(0, 0, 220, 220);
+
+      if (total === 0 || segments.length === 0) {
+        // Círculo vazio
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+        ctx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
+        ctx.fillStyle = '#27272a';
+        ctx.fill();
+
+        ctx.fillStyle = '#71717a';
+        ctx.font = '600 13px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('Sem dados', cx, cy + 5);
+      } else {
+        let startAngle = -Math.PI / 2;
+
+        segments.forEach(seg => {
+          const sliceAngle = (seg.value / total) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, outerR, startAngle, startAngle + sliceAngle);
+          ctx.arc(cx, cy, innerR, startAngle + sliceAngle, startAngle, true);
+          ctx.closePath();
+          ctx.fillStyle = seg.color;
+          ctx.fill();
+          startAngle += sliceAngle;
+        });
+
+        // Centro: taxa
+        const taxa = total > 0 ? ((confirmados / total) * 100).toFixed(0) : 0;
+        ctx.fillStyle = '#fafafa';
+        ctx.font = '700 28px "Space Grotesk"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(taxa + '%', cx, cy - 6);
+
+        ctx.fillStyle = '#a1a1aa';
+        ctx.font = '500 11px Inter';
+        ctx.fillText('presença', cx, cy + 16);
+      }
+
+      // Legenda
+      const legendEl = document.getElementById('chartLegend');
+      const allSegments = [
+        { label: 'Impressos',        value: impressos,              color: '#22c55e' },
+        { label: 'Confirmados (aguardando)', value: Math.max(0, confirmados - impressos), color: '#f59e0b' },
+        { label: 'Não confirmados',  value: naoConfirmados,         color: '#3f3f46' },
+      ];
+      legendEl.innerHTML = allSegments.map(s => `
+        <div class="legend-item">
+          <span class="legend-dot" style="background:${s.color};"></span>
+          ${s.label}
+          <span class="legend-value">${s.value}</span>
+        </div>
+      `).join('');
+    }
+
+    // ─────────────── 5. Tabela de Participantes ───────────────
+    function renderTable() {
+      const query = (searchInput.value || '').toLowerCase().trim();
+      const filtered = query
+        ? inscricoes.filter(i => (i.nome || '').toLowerCase().includes(query))
+        : inscricoes;
+
+      if (filtered.length === 0) {
+        participantsBody.innerHTML = `
+          <tr><td colspan="5" class="empty-state">
+            <i class="ph ph-user-list"></i>
+            ${inscricoes.length === 0 ? 'Nenhuma inscrição encontrada para este evento.' : 'Nenhum resultado para a busca.'}
+          </td></tr>`;
+        return;
+      }
+
+      participantsBody.innerHTML = filtered.map(i => {
+        const cargoEmpresa = [i.cargo, i.orgao_empresa].filter(Boolean).join(' — ');
+        return `
+          <tr>
+            <td style="font-weight:600;">${i.nome || '—'}</td>
+            <td style="color:var(--color-text-secondary);">${cargoEmpresa || '—'}</td>
+            <td style="color:var(--color-text-secondary);">${i.cidade || '—'}</td>
+            <td style="text-align:center;">
+              ${i.confirmado
+                ? '<span class="status-badge status-yes">✅ Sim</span>'
+                : '<span class="status-badge status-no">— Não</span>'}
+            </td>
+            <td style="text-align:center;">
+              ${i.impresso
+                ? '<span class="status-badge status-yes">🖨️ Sim</span>'
+                : '<span class="status-badge status-no">— Não</span>'}
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    // ─────────────── 6. Auto-Refresh ───────────────
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(() => {
+        loadDashboard();
+      }, 10000); // A cada 10 segundos
+    }
+
+    // ─────────────── Toast ───────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toastMessage').textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
+    }
+  </script>
+</body>
+</html>

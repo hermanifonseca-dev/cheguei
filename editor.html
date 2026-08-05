@@ -1235,7 +1235,7 @@
       const heightInches = (labelState.height_mm / 25.4).toFixed(2);
       const zpl = generateZPL(true);
 
-      const url = `https://api.labelary.com/v1/printers/203dpi/labels/${widthInches}x${heightInches}/0/`;
+      const url = `https://api.labelary.com/v1/printers/8dpmm/labels/${widthInches}x${heightInches}/0/`;
 
       try {
         const response = await fetch(url, {
@@ -1249,9 +1249,11 @@
           const imgUrl = URL.createObjectURL(blob);
           previewBox.innerHTML = `<img src="${imgUrl}" alt="Labelary Preview">`;
         } else {
-          previewBox.innerHTML = '<span style="color: var(--color-danger); font-size: 0.8rem;">Erro ao carregar prévia do Labelary.</span>';
+          console.error('Labelary API erro HTTP:', response.status);
+          previewBox.innerHTML = `<span style="color: var(--color-danger); font-size: 0.8rem;">Erro ao carregar prévia (HTTP ${response.status}).</span>`;
         }
       } catch (err) {
+        console.error('Labelary API exceção:', err);
         previewBox.innerHTML = '<span style="color: var(--color-danger); font-size: 0.8rem;">Falha na conexão com a API do Labelary.</span>';
       }
     }

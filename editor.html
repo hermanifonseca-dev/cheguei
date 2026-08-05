@@ -483,6 +483,13 @@
       <div class="brand-title">
         Cheguei <span class="badge-tag">Editor ZPL II</span>
       </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; margin-left: 12px;">
+        <i class="ph ph-calendar" style="color: var(--color-primary); font-size: 1.2rem;"></i>
+        <select id="selectEvento" class="prop-select" style="width: 240px; padding: 6px 10px; font-weight: 600; font-size: 0.85rem; border-color: rgba(0, 168, 89, 0.4);">
+          <option value="1">Carregando eventos...</option>
+        </select>
+      </div>
     </div>
 
     <div class="header-actions">
@@ -701,11 +708,14 @@
     const previewBox = document.getElementById('previewBox');
     const btnConnectUSB = document.getElementById('btnConnectUSB');
 
+    const selectEvento = document.getElementById('selectEvento');
+
     // Configuração do Supabase
     const SUPABASE_URL = 'https://eqadpgfpicxfpyaitnrn.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_YV0sk8AJJhm9CTB7p4AkCw_y8JoeNxw';
     let supabaseClient = null;
     let currentEventoId = 1;
+    let eventosList = [];
 
     if (window.supabase) {
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -728,33 +738,79 @@
         }
       }
 
-      // 2. Busca o modelo mais recente do evento ativo no Supabase
+      // 2. Busca lista de eventos do Supabase e carrega o evento selecionado
       if (supabaseClient) {
-        try {
-          const { data: evento, error } = await supabaseClient
-            .from('eventos')
-            .select('id, nome, modelo_etiqueta')
-            .eq('status', 'ativo')
-            .limit(1)
-            .maybeSingle();
-
-          if (evento) {
-            currentEventoId = evento.id;
-            if (evento.modelo_etiqueta && Array.isArray(evento.modelo_etiqueta.elements)) {
-              labelState = evento.modelo_etiqueta;
-              inputWidthMM.value = labelState.width_mm || 80;
-              inputHeightMM.value = labelState.height_mm || 30;
-              localStorage.setItem('cheguei_label_template', JSON.stringify(labelState));
-              console.log('✅ Modelo do evento (' + evento.nome + ') carregado do Supabase.');
-            }
-          }
-        } catch (err) {
-          console.log('Busca no Supabase continuou com fallback local:', err);
-        }
+        await fetchEventosFromSupabase();
       }
 
       renderCanvas();
       setupEventListeners();
+      updateZPLCode();
+    }
+
+    // Busca a lista de eventos no Supabase para popular o dropdown
+    async function fetchEventosFromSupabase() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('eventos')
+          .select('id, nome, status, modelo_etiqueta')
+          .order('id', { ascending: false });
+
+        if (error) {
+          console.warn('Aviso ao consultar lista de eventos:', error);
+          selectEvento.innerHTML = '<option value="1">Evento Padrão (ID: 1)</option>';
+          return;
+        }
+
+        if (data && data.length > 0) {
+          eventosList = data;
+          selectEvento.innerHTML = '';
+
+          // Seleciona o primeiro evento ativo por padrão, ou o primeiro registro
+          const ativo = data.find(e => e.status === 'ativo') || data[0];
+          currentEventoId = ativo.id;
+
+          data.forEach(ev => {
+            const opt = document.createElement('option');
+            opt.value = ev.id;
+            opt.textContent = `${ev.status === 'ativo' ? '🟢 ' : ''}${ev.nome} (ID: ${ev.id})`;
+            if (ev.id === currentEventoId) opt.selected = true;
+            selectEvento.appendChild(opt);
+          });
+
+          // Se o evento ativo tiver um modelo salvo, aplica no canvas
+          if (ativo.modelo_etiqueta && Array.isArray(ativo.modelo_etiqueta.elements)) {
+            labelState = ativo.modelo_etiqueta;
+            inputWidthMM.value = labelState.width_mm || 80;
+            inputHeightMM.value = labelState.height_mm || 30;
+            localStorage.setItem('cheguei_label_template', JSON.stringify(labelState));
+          }
+        } else {
+          selectEvento.innerHTML = '<option value="1">Evento Padrão (ID: 1)</option>';
+        }
+      } catch (err) {
+        console.error('Exceção ao listar eventos:', err);
+        selectEvento.innerHTML = '<option value="1">Evento Padrão (ID: 1)</option>';
+      }
+    }
+
+    // Troca de evento selecionado no dropdown
+    function handleEventoChange(eventoId) {
+      currentEventoId = parseInt(eventoId);
+      const ev = eventosList.find(e => e.id === currentEventoId);
+
+      if (ev && ev.modelo_etiqueta && Array.isArray(ev.modelo_etiqueta.elements)) {
+        labelState = ev.modelo_etiqueta;
+        inputWidthMM.value = labelState.width_mm || 80;
+        inputHeightMM.value = labelState.height_mm || 30;
+        localStorage.setItem('cheguei_label_template', JSON.stringify(labelState));
+        showToast(`✅ Modelo do evento "${ev.nome}" carregado!`, 'success');
+      } else {
+        showToast(`Modelo padrão carregado para "${ev ? ev.nome : 'Evento'}".`, 'success');
+      }
+
+      selectedElementId = null;
+      renderCanvas();
       updateZPLCode();
     }
 
@@ -910,6 +966,13 @@
 
     // 5. EVENT LISTENERS DO INSPECTOR
     function setupEventListeners() {
+      // Troca de Evento Selecionado
+      if (selectEvento) {
+        selectEvento.addEventListener('change', (e) => {
+          handleEventoChange(e.target.value);
+        });
+      }
+
       // Mudança nas dimensões da etiqueta
       inputWidthMM.addEventListener('change', () => {
         labelState.width_mm = parseFloat(inputWidthMM.value) || 80;

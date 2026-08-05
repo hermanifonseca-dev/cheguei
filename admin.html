@@ -480,8 +480,8 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">Código do Evento</label>
-              <input type="text" class="form-input" id="formCodigo" placeholder="Ex: 00000002">
+              <label class="form-label">Código do Evento <span style="font-weight: normal; opacity: 0.7;">(Automático)</span></label>
+              <input type="text" class="form-input" id="formCodigo" placeholder="Gerado automaticamente" readonly style="opacity: 0.6; cursor: not-allowed;">
             </div>
 
             <div class="form-group">
@@ -733,9 +733,9 @@
 
       const editingId = eventId.value ? parseInt(eventId.value) : null;
 
+      // Nota: codigo_evento é uma coluna gerada automaticamente no PostgreSQL e NUNCA deve ser enviada no payload
       const payload = {
         nome: formNome.value.trim(),
-        codigo_evento: formCodigo.value.trim() || ('0000000' + Date.now()).slice(-8),
         slug: formSlug.value.trim() || formNome.value.toLowerCase().replace(/\s+/g, '-'),
         subtitulo: formSubtitulo.value.trim() || null,
         data_evento: formData.value || null,
@@ -745,28 +745,24 @@
         status: formStatus.value
       };
 
-      console.log('Payload:', payload, 'Editing ID:', editingId);
+      console.log('Payload a ser enviado:', payload, 'Editing ID:', editingId);
 
       try {
         if (payload.status === 'ativo') {
-          // Se for definido como ativo, desativa os outros eventos
-          const desativQuery = supabaseClient
+          // Se for definido como ativo, desativa os outros eventos ativos
+          const { error: desativErr } = await supabaseClient
             .from('eventos')
             .update({ status: 'inativo' })
             .eq('status', 'ativo');
-          
-          if (editingId) {
-            desativQuery.neq('id', editingId);
-          }
-          await desativQuery;
+            
+          if (desativErr) console.warn('Aviso ao desativar outros eventos:', desativErr);
         }
 
         if (editingId) {
-          // UPDATE (remove codigo_evento pois é coluna gerada no banco)
-          const { codigo_evento, ...updatePayload } = payload;
+          // UPDATE
           const { error } = await supabaseClient
             .from('eventos')
-            .update(updatePayload)
+            .update(payload)
             .eq('id', editingId);
 
           if (error) throw error;
@@ -796,8 +792,9 @@
         closeModal();
         fetchEvents();
       } catch (err) {
-        console.error('Erro ao salvar evento:', err);
-        showToast('Erro ao salvar evento: ' + (err.message || JSON.stringify(err)), 'error');
+        console.error('Erro detalhado ao salvar evento:', err);
+        const errMsg = err.message || err.details || JSON.stringify(err);
+        showToast('Erro ao salvar evento: ' + errMsg, 'error');
       }
     });
 

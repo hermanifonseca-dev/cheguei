@@ -762,10 +762,11 @@
         }
 
         if (editingId) {
-          // UPDATE
+          // UPDATE (remove codigo_evento pois é coluna gerada no banco)
+          const { codigo_evento, ...updatePayload } = payload;
           const { error } = await supabaseClient
             .from('eventos')
-            .update(payload)
+            .update(updatePayload)
             .eq('id', editingId);
 
           if (error) throw error;

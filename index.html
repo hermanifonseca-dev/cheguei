@@ -876,6 +876,16 @@
       window.addEventListener('DOMContentLoaded', tryAutoConnectUSB);
     }
 
+    // Desregistra automaticamente qualquer Service Worker PWA ativo no navegador para liberar a WebUSB
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister().then(() => {
+            console.log('✅ Service Worker PWA removido com sucesso para liberar a WebUSB.');
+          });
+        }
+      });
+    }
   </script>
 </body>
 </html>

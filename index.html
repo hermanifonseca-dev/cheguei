@@ -651,17 +651,17 @@
       const cidade = cleanZPLText(inscricao.cidade).toUpperCase();
 
       const encoder = new TextEncoder();
-      // Comando ZPL com largura física de 640 dots (80mm), redefinição de origem ^LH0,0 e Cargo-Empresa tamanho 30
+      // Comando ZPL com largura física de 640 dots (80mm), redefinição de origem ^LH0,0 e Cargo-Empresa tamanho 25 centralizado
       const zplCommand = `^XA
 ^PW640
 ^LL240
 ^LH0,0
 ^CF0,52
-^FO0,25^FB640,1,0,C,0^FD${nomeFormatado}^FS
-^CF0,30
-^FO0,95^FB640,1,0,C,0^FD${cargoEmpresa}^FS
-^CF0,28
-^FO0,145^FB640,1,0,C,0^FD${cidade}^FS
+^FO0,35^FB640,1,0,C,0^FD${nomeFormatado}^FS
+^CF0,25
+^FO0,105^FB640,1,0,C,0^FD${cargoEmpresa}^FS
+^CF0,25
+^FO0,152^FB640,1,0,C,0^FD${cidade}^FS
 ^XZ`;
 
       const data = encoder.encode(zplCommand);
@@ -752,11 +752,11 @@
 ^LL240
 ^LH0,0
 ^CF0,52
-^FO0,25^FB640,1,0,C,0^FDHERMANI FONSECA^FS
-^CF0,30
-^FO0,95^FB640,1,0,C,0^FDDESENVOLVEDOR DE SISTEMAS - POLIS GESTAO^FS
-^CF0,28
-^FO0,145^FB640,1,0,C,0^FDGOVERNADOR VALADARES^FS
+^FO0,35^FB640,1,0,C,0^FDHERMANI FONSECA^FS
+^CF0,25
+^FO0,105^FB640,1,0,C,0^FDDESENVOLVEDOR DE SISTEMAS - POLIS GESTAO^FS
+^CF0,25
+^FO0,152^FB640,1,0,C,0^FDGOVERNADOR VALADARES^FS
 ^XZ`;
 
         const data = encoder.encode(zplCommand);

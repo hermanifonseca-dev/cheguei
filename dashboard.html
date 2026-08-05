@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Cheguei - Dashboard de Eventos</title>
+  <link rel="icon" type="image/x-icon" href="icon_cheguei_hd.ico">
   <meta name="description" content="Dashboard analítico de eventos com métricas de check-in, presença e impressão de crachás em tempo real.">
 
   <!-- Google Fonts -->
@@ -569,6 +570,7 @@
             <thead>
               <tr>
                 <th>Nome</th>
+                <th>Contato / CPF</th>
                 <th>Cargo / Empresa</th>
                 <th>Cidade</th>
                 <th style="text-align:center;">Check-in (Manual)</th>
@@ -577,7 +579,7 @@
             </thead>
             <tbody id="participantsBody">
               <tr>
-                <td colspan="5" class="empty-state">
+                <td colspan="6" class="empty-state">
                   <i class="ph ph-circle-notch" style="animation:spin 1s linear infinite;"></i>
                   Carregando participantes...
                 </td>
@@ -592,7 +594,7 @@
 
   <!-- Modal Inscrição Manual -->
   <div class="modal-backdrop" id="modalInscricao" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:var(--transition);">
-    <div class="modal-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);width:90%;max-width:500px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+    <div class="modal-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);width:90%;max-width:540px;max-height:90vh;overflow-y:auto;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.8);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--color-border);padding-bottom:14px;">
         <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;display:flex;align-items:center;gap:8px;">
           <i class="ph ph-user-plus" style="color:var(--color-primary);"></i> Cadastrar Participante
@@ -604,13 +606,29 @@
           <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Nome Completo *</label>
           <input type="text" id="insNome" required placeholder="Ex: João da Silva" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
         </div>
-        <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Cargo</label>
-          <input type="text" id="insCargo" placeholder="Ex: Desenvolvedor / Analista" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Telefone / WhatsApp</label>
+            <input type="tel" id="insTelefone" placeholder="Ex: (31) 99999-9999" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+          </div>
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">CPF</label>
+            <input type="text" id="insCPF" placeholder="Ex: 000.000.000-00" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+          </div>
         </div>
         <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Órgão / Empresa</label>
-          <input type="text" id="insEmpresa" placeholder="Ex: Prefeitura de Belo Horizonte" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+          <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">E-mail</label>
+          <input type="email" id="insEmail" placeholder="Ex: participante@email.com" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Cargo</label>
+            <input type="text" id="insCargo" placeholder="Ex: Desenvolvedor / Analista" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+          </div>
+          <div>
+            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Órgão / Empresa</label>
+            <input type="text" id="insEmpresa" placeholder="Ex: Prefeitura de Belo Horizonte" style="width:100%;background:var(--color-surface-elevated);border:1px solid var(--color-border);color:#fff;padding:10px 12px;border-radius:var(--radius-sm);outline:none;">
+          </div>
         </div>
         <div style="margin-bottom:18px;">
           <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--color-text-secondary);margin-bottom:6px;">Cidade</label>
@@ -863,12 +881,20 @@
     function renderTable() {
       const query = (searchInput.value || '').toLowerCase().trim();
       const filtered = query
-        ? inscricoes.filter(i => (i.nome || '').toLowerCase().includes(query))
+        ? inscricoes.filter(i => 
+            (i.nome || '').toLowerCase().includes(query) ||
+            (i.email || '').toLowerCase().includes(query) ||
+            (i.cpf || '').toLowerCase().includes(query) ||
+            (i.telefone || '').toLowerCase().includes(query) ||
+            (i.cargo || '').toLowerCase().includes(query) ||
+            (i.orgao_empresa || '').toLowerCase().includes(query) ||
+            (i.cidade || '').toLowerCase().includes(query)
+          )
         : inscricoes;
 
       if (filtered.length === 0) {
         participantsBody.innerHTML = `
-          <tr><td colspan="5" class="empty-state">
+          <tr><td colspan="6" class="empty-state">
             <i class="ph ph-user-list"></i>
             ${inscricoes.length === 0 ? 'Nenhuma inscrição encontrada para este evento.' : 'Nenhum resultado para a busca.'}
           </td></tr>`;
@@ -877,9 +903,18 @@
 
       participantsBody.innerHTML = filtered.map(i => {
         const cargoEmpresa = [i.cargo, i.orgao_empresa].filter(Boolean).join(' — ');
+        const contatoArr = [];
+        if (i.telefone) contatoArr.push(`📞 ${i.telefone}`);
+        if (i.cpf) contatoArr.push(`🪪 ${i.cpf}`);
+        const contatoStr = contatoArr.join(' | ');
+
         return `
           <tr>
-            <td style="font-weight:600;">${i.nome || '—'}</td>
+            <td style="font-weight:600;">
+              <div>${i.nome || '—'}</div>
+              ${i.email ? `<div style="font-size:0.75rem;color:var(--color-text-secondary);font-weight:normal;">📧 ${i.email}</div>` : ''}
+            </td>
+            <td style="color:var(--color-text-secondary);font-size:0.85rem;">${contatoStr || '—'}</td>
             <td style="color:var(--color-text-secondary);">${cargoEmpresa || '—'}</td>
             <td style="color:var(--color-text-secondary);">${i.cidade || '—'}</td>
             <td style="text-align:center;">
@@ -986,6 +1021,9 @@
       if (!sb || !selectedEventId) return;
 
       const nome = document.getElementById('insNome').value.trim();
+      const telefone = document.getElementById('insTelefone').value.trim() || null;
+      const cpf = document.getElementById('insCPF').value.trim() || null;
+      const email = document.getElementById('insEmail').value.trim() || null;
       const cargo = document.getElementById('insCargo').value.trim() || null;
       const empresa = document.getElementById('insEmpresa').value.trim() || null;
       const cidade = document.getElementById('insCidade').value.trim() || null;
@@ -995,6 +1033,9 @@
         const payload = {
           evento_id: selectedEventId,
           nome: nome,
+          telefone: telefone,
+          cpf: cpf,
+          email: email,
           cargo: cargo,
           orgao_empresa: empresa,
           cidade: cidade,

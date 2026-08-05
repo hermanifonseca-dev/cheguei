@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Cheguei - Check-in Inteligente</title>
+  <link rel="icon" type="image/x-icon" href="icon_cheguei_hd.ico">
   
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -451,7 +452,7 @@
 
       <div class="whatsapp-qr-container" style="display: flex; justify-content: center; align-items: center; margin-top: 0.5rem;">
         <div style="background: white; padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-glow);">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https%3A%2F%2Fwa.me%2F553399852549%3Ftext%3DQuero%20fazer%20o%20meu%20check-in" alt="QR Code WhatsApp" style="width: 260px; height: 260px; max-width: 65vw; max-height: 30vh; display: block;" />
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=https%3A%2F%2Fwa.me%2F5533998525493%3Ftext%3DQuero%20fazer%20o%20meu%20check-in" alt="QR Code WhatsApp" style="width: 260px; height: 260px; max-width: 65vw; max-height: 30vh; display: block;" />
         </div>
       </div>
 
@@ -689,6 +690,9 @@
       }
 
       const cidade = cleanZPLText(inscricao.cidade).toUpperCase();
+      const telefone = cleanZPLText(inscricao.telefone).toUpperCase();
+      const cpf = cleanZPLText(inscricao.cpf).toUpperCase();
+      const email = cleanZPLText(inscricao.email).toUpperCase();
 
       let zplCommand = '';
       let activeState = null;
@@ -708,35 +712,50 @@
             console.log('✅ Utilizando modelo de etiqueta do Supabase (Evento ID: ' + eventoId + ')');
           }
         } catch (e) {
-          console.warn('Erro ao consultar modelo do Supabase, tentando local:', e);
+          console.warn('Erro ao carregar modelo de etiqueta do Supabase, usando padrão local:', e);
         }
       }
 
-      // 2. Fallback para localStorage se não encontrou no Supabase
+      // 2. Se não encontrou no Supabase, tenta carregar do localStorage
       if (!activeState) {
-        const savedLocal = localStorage.getItem('cheguei_label_template');
-        if (savedLocal) {
+        const saved = localStorage.getItem('cheguei_label_template');
+        if (saved) {
           try {
-            const parsed = JSON.parse(savedLocal);
-            if (parsed && Array.isArray(parsed.elements)) {
-              activeState = parsed;
-              console.log('✅ Utilizando modelo de etiqueta do localStorage');
-            }
-          } catch(e){}
+            activeState = JSON.parse(saved);
+          } catch (e) {
+            console.error('Erro ao ler modelo do localStorage:', e);
+          }
         }
       }
 
-      // 3. Monta o comando ZPL dinâmico a partir do modelo
+      // 3. Monta o ZPL dinâmico baseado nos elementos do modelo
       if (activeState && Array.isArray(activeState.elements)) {
-        const widthDots = Math.round((activeState.width_mm || 80) * 8);
-        const heightDots = Math.round((activeState.height_mm || 30) * 8);
+        const widthDots = Math.round(activeState.width_mm * 8);
+        const heightDots = Math.round(activeState.height_mm * 8);
 
         zplCommand = `^XA\n^PW${widthDots}\n^LL${heightDots}\n^LH0,0\n`;
 
         activeState.elements.forEach(el => {
-          if (el.type === 'line') {
-            const lineW_MM = el.width_mm || (activeState.width_mm - 10);
-            let x_MM = el.x_mm;
+          if (el.type === 'barcode') {
+            const xDots = Math.round((el.x_mm || 0) * 8);
+            const yDots = Math.round((el.y_mm || 0) * 8);
+            const barH = el.height_dots || 60;
+            let val = el.content || '123456';
+            if (val === '${id}') val = String(inscricao.id || '123456');
+
+            zplCommand += `^FO${xDots},${yDots}^BCN,${barH},Y,N,N^FD${val}^FS\n`;
+          } else if (el.type === 'qrcode') {
+            const xDots = Math.round((el.x_mm || 0) * 8);
+            const yDots = Math.round((el.y_mm || 0) * 8);
+            const mag = el.magnification || 4;
+            let val = el.content || 'CHEGUEI';
+            if (val === '${id}') val = String(inscricao.id || '123456');
+            if (val === '${nome}') val = nomeFormatado;
+
+            zplCommand += `^FO${xDots},${yDots}^BQN,2,${mag}^FDQA,${val}^FS\n`;
+          } else if (el.type === 'linha') {
+            let x_MM = el.x_mm || 0;
+            let lineW_MM = el.width_mm || activeState.width_mm;
             if (el.align === 'C' || el.x_mm === undefined || el.x_mm === 0) {
               x_MM = (activeState.width_mm - lineW_MM) / 2;
             }
@@ -753,6 +772,9 @@
             if (val === '${nome}') val = nomeFormatado;
             else if (val === '${cargo_empresa}') val = cargoEmpresa;
             else if (val === '${cidade}') val = cidade;
+            else if (val === '${telefone}') val = telefone;
+            else if (val === '${cpf}') val = cpf;
+            else if (val === '${email}') val = email;
 
             zplCommand += `^CF0,${el.font_size || 30}\n`;
             zplCommand += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${val}^FS\n`;

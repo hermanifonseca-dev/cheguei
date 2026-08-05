@@ -6,6 +6,16 @@
   <title>Cheguei - Dashboard de Eventos</title>
   <meta name="description" content="Dashboard analítico de eventos com métricas de check-in, presença e impressão de crachás em tempo real.">
 
+  <!-- PWA Meta Tags & Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#00a859">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Cheguei">
+  <link rel="icon" type="image/svg+xml" href="/icon-192.svg">
+  <link rel="apple-touch-icon" href="/icon-192.svg">
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1029,6 +1039,13 @@
       document.getElementById('toastMessage').textContent = msg;
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 3500);
+    // ─────────────── PWA SW ───────────────
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('PWA Service Worker registrado:', reg.scope))
+          .catch(err => console.warn('Erro PWA SW:', err));
+      });
     }
   </script>
 </body>

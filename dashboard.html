@@ -944,7 +944,9 @@
           .from('inscricoes')
           .update({ 
             confirmado: novoStatus,
-            data_confirmacao: novoStatus ? new Date().toISOString() : null
+            data_confirmacao: novoStatus ? new Date().toISOString() : null,
+            // Ao confirmar check-in, reseta impresso=false para entrar na fila de impressão automática
+            ...(novoStatus ? { impresso: false, data_impressao: null } : {})
           })
           .eq('id', id);
 
@@ -953,7 +955,7 @@
         const i = inscricoes.find(item => item.id === id);
         const nome = i ? i.nome : 'Participante';
         
-        showToast(novoStatus ? `✅ Check-in de "${nome}" realizado!` : `⚪ Check-in de "${nome}" desfeito.`);
+        showToast(novoStatus ? `✅ Check-in de "${nome}" realizado! Etiqueta enviada para impressão.` : `⚪ Check-in de "${nome}" desfeito.`);
         await loadDashboard();
       } catch (err) {
         console.error('Erro ao alterar check-in:', err);

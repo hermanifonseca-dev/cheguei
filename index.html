@@ -753,7 +753,7 @@
             if (val === '${nome}') val = nomeFormatado;
 
             zplCommand += `^FO${xDots},${yDots}^BQN,2,${mag}^FDQA,${val}^FS\n`;
-          } else if (el.type === 'linha') {
+          } else if (el.type === 'linha' || el.type === 'line') {
             let x_MM = el.x_mm || 0;
             let lineW_MM = el.width_mm || activeState.width_mm;
             if (el.align === 'C' || el.x_mm === undefined || el.x_mm === 0) {
@@ -765,9 +765,9 @@
             const thickness = el.thickness || 3;
             zplCommand += `^FO${xDots},${yDots}^GB${lineWidthDots},0,${thickness},B,0^FS\n`;
           } else {
-            const xDots = Math.round((el.x_mm || 0) * 8);
-            const yDots = Math.round((el.y_mm || 0) * 8);
+            const fontSize = el.font_size || 30;
             const align = el.align || 'C';
+            const yDots = Math.round((el.y_mm || 0) * 8);
             let val = el.content || '';
             if (val === '${nome}') val = nomeFormatado;
             else if (val === '${cargo_empresa}') val = cargoEmpresa;
@@ -776,8 +776,20 @@
             else if (val === '${cpf}') val = cpf;
             else if (val === '${email}') val = email;
 
-            zplCommand += `^CF0,${el.font_size || 30}\n`;
-            zplCommand += `^FO${xDots},${yDots}^FB${widthDots},1,0,${align},0^FD${val}^FS\n`;
+            // Calcular X em JS para centralizar — Elgin L42 PRO ignora ^FB center
+            let xDots;
+            if (align === 'C') {
+              const approxW = Math.round(val.length * fontSize * 0.58);
+              xDots = Math.max(0, Math.round((widthDots - approxW) / 2));
+            } else if (align === 'R') {
+              const approxW = Math.round(val.length * fontSize * 0.58);
+              xDots = Math.max(0, widthDots - approxW - 10);
+            } else {
+              xDots = Math.round((el.x_mm || 0) * 8);
+            }
+
+            zplCommand += `^CF0,${fontSize}\n`;
+            zplCommand += `^FO${xDots},${yDots}^FD${val}^FS\n`;
           }
         });
 

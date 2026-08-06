@@ -779,10 +779,10 @@
             // Calcular X em JS para centralizar — Elgin L42 PRO ignora ^FB center
             let xDots;
             if (align === 'C') {
-              const approxW = Math.round(val.length * fontSize * 0.58);
-              xDots = Math.max(0, Math.round((widthDots - approxW) / 2));
+              const approxW = Math.round(val.length * fontSize * 0.50);
+              xDots = Math.max(5, Math.round((widthDots - approxW) / 2));
             } else if (align === 'R') {
-              const approxW = Math.round(val.length * fontSize * 0.58);
+              const approxW = Math.round(val.length * fontSize * 0.50);
               xDots = Math.max(0, widthDots - approxW - 10);
             } else {
               xDots = Math.round((el.x_mm || 0) * 8);
